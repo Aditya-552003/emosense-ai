@@ -23,7 +23,7 @@ jobs:
           git config --global user.name "Aditya Sharma"
           
           # Add Hugging Face Space as a remote
-          git remote add hf https://Aditya-552003:$HF_TOKEN@huggingface.co/spaces/Aditya-552003/emosense-ai
+          git remote add hf https://DSAditya552003:$HF_TOKEN@huggingface.co/spaces/DSAditya552003/emosense-ai
           
           # Fetch and pull remote changes from Hugging Face Space (preserving browser-uploaded models)
           # using ours strategy to prefer local code changes in case of conflict on code files
