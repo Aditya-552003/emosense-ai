@@ -4,7 +4,7 @@ FROM python:3.10-slim
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8080 \
+    PORT=7860 \
     HOST=0.0.0.0 \
     MODEL_DIR=/app/model
 
@@ -25,8 +25,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy all backend files into the container
 COPY . .
 
-# Expose port 8080
-EXPOSE 8080
+# Expose port 7860
+EXPOSE 7860
 
 # Command to run the application using factory pattern
 CMD ["sh", "-c", "uvicorn app:create_app --factory --host $HOST --port $PORT"]
