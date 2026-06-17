@@ -5,7 +5,7 @@
  * by any module without circular dependencies.
  */
 
-export const API_BASE    = "http://127.0.0.1:8080";
+export const API_BASE    = window.location.origin;
 export const MAX_CHARS   = 500;
 export const HISTORY_KEY = "emosense_history";
 export const MAX_HISTORY = 20;
