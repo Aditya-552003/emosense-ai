@@ -51,6 +51,7 @@ def load_models() -> None:
     log.info("Loading sklearn artifacts ...")
     from huggingface_hub import hf_hub_download
     repo_id = os.getenv("HF_MODEL_REPO", "DSAditya552003/emosense-ai-model")
+    token = os.getenv("HF_TOKEN")
 
     def _load_artifact(name: str, is_pickle: bool = False):
         local_path = os.path.join(MODEL_DIR, name)
@@ -60,7 +61,7 @@ def load_models() -> None:
         else:
             log.info(f"Downloading {name} from Hugging Face Hub ({repo_id})...")
             try:
-                path_to_load = hf_hub_download(repo_id=repo_id, filename=name)
+                path_to_load = hf_hub_download(repo_id=repo_id, filename=name, token=token)
             except Exception as e:
                 log.error(f"Failed to download {name} from HF Hub: {e}")
                 raise FileNotFoundError(f"Model artifact {name} not found locally or on HF Hub.") from e
@@ -91,8 +92,8 @@ def load_models() -> None:
         log.info(f"Loading RoBERTa from Hugging Face Hub repo: {repo_id} ...")
         model_source = repo_id
 
-    _models["tokenizer"] = AutoTokenizer.from_pretrained(model_source)
-    roberta = AutoModelForSequenceClassification.from_pretrained(model_source)
+    _models["tokenizer"] = AutoTokenizer.from_pretrained(model_source, token=token)
+    roberta = AutoModelForSequenceClassification.from_pretrained(model_source, token=token)
     roberta.to(device)
     roberta.eval()
     # Warm-up pass to pre-compile kernels
