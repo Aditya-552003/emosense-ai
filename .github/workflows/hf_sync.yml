@@ -27,9 +27,14 @@ jobs:
           
           # Fetch and pull remote changes from Hugging Face Space (preserving browser-uploaded models)
           # using ours strategy to prefer local code changes in case of conflict on code files
-          git fetch hf main
-          git checkout -b temp-sync
-          git merge -s ours hf/main --allow-unrelated-histories -m "Merge remote changes from HF Space"
-          
-          # Push back to Hugging Face
-          git push hf temp-sync:main
+          # Check if 'main' branch exists on the remote Hugging Face Space
+          if git ls-remote --exit-code --heads hf main; then
+            echo "Remote branch 'main' exists. Fetching and merging..."
+            git fetch hf main
+            git checkout -b temp-sync
+            git merge -s ours hf/main --allow-unrelated-histories -m "Merge remote changes from HF Space"
+            git push hf temp-sync:main
+          else
+            echo "Remote branch 'main' does not exist (empty Space). Pushing directly..."
+            git push hf main
+          fi
