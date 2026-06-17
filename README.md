@@ -1,3 +1,13 @@
+---
+title: EmoSense AI
+emoji: 🧠
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # 🧠 EmoSense AI — Emotion Detection System
 
 A full-stack AI emotion detection system powered by a **hybrid stacking ensemble** that combines **fine-tuned RoBERTa** (contextual understanding) with **XGBoost + NRC Emotion Lexicon** (semantic features), blended via dynamic alpha-weighted soft voting.

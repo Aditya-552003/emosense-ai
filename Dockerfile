@@ -5,8 +5,7 @@ FROM python:3.10-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PORT=7860 \
-    HOST=0.0.0.0 \
-    MODEL_DIR=/app/model
+    HOST=0.0.0.0
 
 # Set the working directory in the container
 WORKDIR /app
@@ -17,13 +16,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file into the container
-COPY requirements.txt .
+COPY backend/requirements.txt .
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all backend files into the container
-COPY . .
+# Copy all project files into the container
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
+
+# Set working directory to backend so python finds the app package
+WORKDIR /app/backend
 
 # Expose port 7860
 EXPOSE 7860
