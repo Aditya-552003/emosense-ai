@@ -49,22 +49,50 @@ def load_models() -> None:
 
     # 2. Sklearn / joblib artifacts
     log.info("Loading sklearn artifacts ...")
-    _models["word_tfidf"] = joblib.load(os.path.join(MODEL_DIR, "word_tfidf.pkl"))
-    _models["char_tfidf"] = joblib.load(os.path.join(MODEL_DIR, "char_tfidf.pkl"))
-    _models["nrc_scaler"] = joblib.load(os.path.join(MODEL_DIR, "nrc_scaler.pkl"))
-    _models["xgb"] = joblib.load(os.path.join(MODEL_DIR, "xgb.pkl"))
-    _models["meta_clf"] = joblib.load(os.path.join(MODEL_DIR, "meta_clf.pkl"))
-    with open(os.path.join(MODEL_DIR, "label_encoder.pkl"), "rb") as f:
-        _models["label_encoder"] = pickle.load(f)
+    from huggingface_hub import hf_hub_download
+    repo_id = os.getenv("HF_MODEL_REPO", "DSAditya552003/emosense-ai-model")
+
+    def _load_artifact(name: str, is_pickle: bool = False):
+        local_path = os.path.join(MODEL_DIR, name)
+        if os.path.exists(local_path):
+            log.info(f"Loading {name} from local storage...")
+            path_to_load = local_path
+        else:
+            log.info(f"Downloading {name} from Hugging Face Hub ({repo_id})...")
+            try:
+                path_to_load = hf_hub_download(repo_id=repo_id, filename=name)
+            except Exception as e:
+                log.error(f"Failed to download {name} from HF Hub: {e}")
+                raise FileNotFoundError(f"Model artifact {name} not found locally or on HF Hub.") from e
+
+        if is_pickle:
+            with open(path_to_load, "rb") as f:
+                return pickle.load(f)
+        else:
+            return joblib.load(path_to_load)
+
+    _models["word_tfidf"] = _load_artifact("word_tfidf.pkl")
+    _models["char_tfidf"] = _load_artifact("char_tfidf.pkl")
+    _models["nrc_scaler"] = _load_artifact("nrc_scaler.pkl")
+    _models["xgb"] = _load_artifact("xgb.pkl")
+    _models["meta_clf"] = _load_artifact("meta_clf.pkl")
+    _models["label_encoder"] = _load_artifact("label_encoder.pkl", is_pickle=True)
     log.info("Sklearn artifacts loaded.")
 
     # 3. RoBERTa
-    roberta_dir = str(ROBERTA_DIR)
-    log.info(f"Loading RoBERTa from {roberta_dir} ...")
     device = "cuda" if torch.cuda.is_available() else "cpu"
     _models["device"] = device
-    _models["tokenizer"] = AutoTokenizer.from_pretrained(roberta_dir)
-    roberta = AutoModelForSequenceClassification.from_pretrained(roberta_dir)
+
+    roberta_dir = str(ROBERTA_DIR)
+    if os.path.isdir(roberta_dir) and os.path.exists(os.path.join(roberta_dir, "model.safetensors")):
+        log.info(f"Loading RoBERTa from local directory: {roberta_dir} ...")
+        model_source = roberta_dir
+    else:
+        log.info(f"Loading RoBERTa from Hugging Face Hub repo: {repo_id} ...")
+        model_source = repo_id
+
+    _models["tokenizer"] = AutoTokenizer.from_pretrained(model_source)
+    roberta = AutoModelForSequenceClassification.from_pretrained(model_source)
     roberta.to(device)
     roberta.eval()
     # Warm-up pass to pre-compile kernels
