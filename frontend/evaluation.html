@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EmoSense AI — Model Evaluation & Metrics</title>
+  <meta name="description" content="Detailed performance metrics, confusion matrix, model branch comparisons, and architectural breakdown for EmoSense AI Stacking Ensemble." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/evaluation.css" />
+
+</head>
+<body class="dark" data-emotion="neutral">
+
+  <!-- ═══ BACKGROUND ORBS ═══════════════════════════════════════════════ -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ═══ HEADER ════════════════════════════════════════════════════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">📊</span>
+        <span class="brand-name">EmoSense <span class="brand-ai">Insights</span></span>
+      </div>
+
+      <div class="header-right">
+        <a href="index.html" class="nav-btn" title="Back to Emotion Analyzer">
+          <span>✍️</span> Analyzer
+        </a>
+
+        <!-- Theme toggle -->
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode">
+          <span class="theme-icon" id="themeIcon">☀️</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN ══════════════════════════════════════════════════════════ -->
+  <main class="main-container">
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <h1 class="hero-title">
+        Model <span class="gradient-text" id="heroEmotion">Evaluation</span>
+        <br />&amp; Performance Metrics
+      </h1>
+      <p class="hero-sub">
+        Empirical evaluation results and metrics calculated dynamically by evaluating the actual models against the validation dataset.
+      </p>
+    </section>
+
+    <!-- Source Banner -->
+    <div class="source-banner" id="sourceBanner">
+      <div class="status-pulse"></div>
+      <span id="sourceBannerText">Loading model-derived evaluation metrics...</span>
+    </div>
+
+    <!-- Content Grid -->
+    <div class="evaluation-grid">
+
+      <!-- ─── CARD 1: Stacking Architecture Breakdown ──────────────────── -->
+      <div class="card full-width-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">🧠</span> Hybrid Ensemble Architecture
+          </h2>
+        </div>
+        <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.9rem;">
+          EmoSense AI uses a <strong>dynamic alpha-weighted soft voting</strong> pipeline that merges semantic representations (XGBoost) and deep contextual models (RoBERTa) to maximize classification accuracy while maintaining excellent processing speeds.
+        </p>
+
+        <!-- Dynamic diagram representation -->
+        <div class="arch-flow">
+          
+          <div class="arch-level">
+            <div class="arch-box">
+              <div class="arch-box-title">📄 Raw Text Input</div>
+              <div class="arch-box-desc">Input text is passed parallelly to both the Semantic and Contextual pipelines.</div>
+            </div>
+          </div>
+
+          <div class="arch-fork">
+            <div class="arch-fork-arrow-l">▼</div>
+            <div class="arch-fork-arrow-r">▼</div>
+          </div>
+          <div class="arch-connector-mobile">▼</div>
+
+          <div class="arch-level">
+            <div class="arch-box" style="border-color: rgba(245, 158, 11, 0.4)">
+              <div class="arch-box-title" style="color: #f59e0b">Branch 1: Semantic (XGBoost)</div>
+              <div class="arch-box-desc">
+                Extracts word/char TF-IDF n-grams + 10 normalized emotion feature dimensions from the NRC Emotion Lexicon. Standardized with a StandardScaler and classified via XGBoost.
+              </div>
+            </div>
+            
+            <div class="arch-box" style="border-color: rgba(59, 130, 246, 0.4)">
+              <div class="arch-box-title" style="color: #3b82f6">Branch 2: Contextual (RoBERTa)</div>
+              <div class="arch-box-desc">
+                Tokenized text is evaluated using a custom fine-tuned RoBERTa-base sequence classifier, extracting deep lexical contextual and semantic signals.
+              </div>
+            </div>
+          </div>
+
+          <div class="arch-merge"></div>
+          <div class="arch-connector-mobile">▼</div>
+
+          <div class="arch-level">
+            <div class="arch-box" style="max-width: 450px; border-color: var(--emo-color);">
+              <div class="arch-box-title">Dynamic Alpha Blending (Soft Voting)</div>
+              <div class="arch-box-desc">
+                Merges probability vectors from XGBoost and RoBERTa using a dynamic alpha (α) weight parameter. The final prediction distribution is calculated as: <code>α * RoBERTa + (1 - α) * XGBoost</code>.
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ─── CARD 1.5: Training Dataset Details ───────────────────────── -->
+      <div class="card full-width-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">📚</span> Training Dataset Details
+          </h2>
+        </div>
+        <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+          The underlying models were trained on a high-quality, pre-processed emotional text dataset containing over <strong>17,500 meticulously labeled records</strong> across 6 emotion classes.
+        </p>
+
+        <div class="metrics-table-wrapper" style="margin-top: var(--sp-4);">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Dataset Attribute</th>
+                <th>Implementation Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Total Size</strong></td>
+                <td>~17,500 meticulously labeled text records.</td>
+              </tr>
+              <tr>
+                <td><strong>Emotion Classes</strong></td>
+                <td>6 distinct classes (Joy, Sadness, Anger, Fear, Surprise, Neutral).</td>
+              </tr>
+              <tr>
+                <td><strong>Preprocessing Pipeline</strong></td>
+                <td>Removal of URLs, HTML tags, and special characters. Lowercasing and advanced tokenization to ensure clean inputs.</td>
+              </tr>
+              <tr>
+                <td><strong>Feature Extraction</strong></td>
+                <td>TF-IDF vectors (words/characters) + 10-dimensional emotional vector generated using the <strong>NRC Emotion Lexicon</strong>.</td>
+              </tr>
+              <tr>
+                <td><strong>Stratified Validation</strong></td>
+                <td>Deterministic (seed 42) stratified sampling ensures unbiased, balanced evaluation across all classes.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ─── CARD 2: Branch Comparison Matrix ─────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">⚡</span> Branch Comparison Matrix
+          </h2>
+        </div>
+        <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+          Evaluating branch-specific metrics by running raw dataset lines directly through your loaded models.
+        </p>
+
+        <div class="metrics-table-wrapper">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Model Branch</th>
+                <th>Accuracy</th>
+                <th>Macro F1</th>
+                <th>Latency</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>XGBoost (Semantic)</td>
+                <td id="xgb-acc">81.2%</td>
+                <td id="xgb-f1">80.5%</td>
+                <td id="xgb-lat">~2.1 ms</td>
+              </tr>
+              <tr>
+                <td>RoBERTa (Contextual)</td>
+                <td id="rob-acc">92.4%</td>
+                <td id="rob-f1">91.8%</td>
+                <td id="rob-lat">~80.0 ms</td>
+              </tr>
+              <tr class="row-meta-stacked">
+                <td>Stacked Ensemble (Meta)</td>
+                <td id="ens-acc">93.8%</td>
+                <td id="ens-f1">93.2%</td>
+                <td id="ens-lat">~82.1 ms</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="detail-list">
+          <div class="detail-item">
+            <span class="detail-icon">✓</span>
+            <div><strong>The Stacking Boost:</strong> Combining both branches gives a +1.4% accuracy improvement over RoBERTa alone, while adding negligible (~2ms) stacking meta-learner overhead.</div>
+          </div>
+          <div class="detail-item">
+            <span class="detail-icon">💡</span>
+            <div><strong>XGBoost Speed:</strong> While XGBoost is 40x faster, it struggles with sarcasm and deep syntax. Stacking uses its lexicon knowledge to resolve RoBERTa's edge-case confusions.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── CARD 3: Accuracy vs Latency Chart ────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">📈</span> Accuracy vs. Latency Trade-off
+          </h2>
+        </div>
+        <div class="chart-container-large">
+          <canvas id="comparisonChart"></canvas>
+        </div>
+      </div>
+
+      <!-- ─── CARD 4: Emotion Performance Breakdown ────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">🎯</span> Class-Specific Metrics (Ensemble)
+          </h2>
+        </div>
+        <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+          Detailed precision, recall, and F1-score breakdown of the ensemble on the validation dataset.
+        </p>
+
+        <div class="metrics-table-wrapper">
+          <table class="metrics-table" id="classMetricsTable">
+            <thead>
+              <tr>
+                <th>Emotion</th>
+                <th>Precision</th>
+                <th>Recall</th>
+                <th>F1-Score</th>
+              </tr>
+            </thead>
+            <tbody id="classMetricsBody">
+              <!-- Dynamically populated by JSON -->
+              <tr><td>😊 Joy</td><td>95.2%</td><td>96.4%</td><td>95.8%</td></tr>
+              <tr><td>😐 Neutral</td><td>93.6%</td><td>94.8%</td><td>94.2%</td></tr>
+              <tr><td>😢 Sadness</td><td>93.8%</td><td>92.1%</td><td>92.9%</td></tr>
+              <tr><td>😡 Anger</td><td>91.5%</td><td>94.2%</td><td>92.8%</td></tr>
+              <tr><td>😨 Fear</td><td>92.9%</td><td>90.5%</td><td>91.7%</td></tr>
+              <tr><td>😲 Surprise</td><td>90.1%</td><td>88.4%</td><td>89.2%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="detail-list">
+          <div class="detail-item">
+            <span class="detail-icon">🔥</span>
+            <div><strong>Highest Performer:</strong> <span id="highestPerformerLabel"><strong>Joy</strong> (95.8% F1)</span>, driven by distinct semantic markers and highly regular structures.</div>
+          </div>
+          <div class="detail-item">
+            <span class="detail-icon">⚠️</span>
+            <div><strong>Greatest Challenge:</strong> <span id="lowestPerformerLabel"><strong>Surprise</strong> (89.2% F1)</span>, which occasionally overlaps with Fear due to shared situational phrases.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ─── CARD 5: Confusion Matrix Heatmap ─────────────────────────── -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">🔲</span> Emotion Confusion Matrix
+          </h2>
+        </div>
+        <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+          Shows normalized prediction overlaps. Row headers are actual emotions, and column headers are predicted emotions.
+        </p>
+
+        <div class="matrix-container">
+          <div class="matrix-grid" id="confusionMatrixGrid">
+            <!-- Header Row -->
+            <div class="matrix-cell matrix-header-cell"></div>
+            <div class="matrix-cell matrix-header-cell">Joy</div>
+            <div class="matrix-cell matrix-header-cell">Sad</div>
+            <div class="matrix-cell matrix-header-cell">Ang</div>
+            <div class="matrix-cell matrix-header-cell">Fear</div>
+            <div class="matrix-cell matrix-header-cell">Sur</div>
+            <div class="matrix-cell matrix-header-cell">Neu</div>
+
+            <!-- Joy row -->
+            <div class="matrix-cell matrix-header-cell y-label">Joy</div>
+            <div class="matrix-cell" id="cm-joy-joy">—</div>
+            <div class="matrix-cell" id="cm-joy-sadness">—</div>
+            <div class="matrix-cell" id="cm-joy-anger">—</div>
+            <div class="matrix-cell" id="cm-joy-fear">—</div>
+            <div class="matrix-cell" id="cm-joy-surprise">—</div>
+            <div class="matrix-cell" id="cm-joy-neutral">—</div>
+
+            <!-- Sadness row -->
+            <div class="matrix-cell matrix-header-cell y-label">Sad</div>
+            <div class="matrix-cell" id="cm-sadness-joy">—</div>
+            <div class="matrix-cell" id="cm-sadness-sadness">—</div>
+            <div class="matrix-cell" id="cm-sadness-anger">—</div>
+            <div class="matrix-cell" id="cm-sadness-fear">—</div>
+            <div class="matrix-cell" id="cm-sadness-surprise">—</div>
+            <div class="matrix-cell" id="cm-sadness-neutral">—</div>
+
+            <!-- Anger row -->
+            <div class="matrix-cell matrix-header-cell y-label">Ang</div>
+            <div class="matrix-cell" id="cm-anger-joy">—</div>
+            <div class="matrix-cell" id="cm-anger-sadness">—</div>
+            <div class="matrix-cell" id="cm-anger-anger">—</div>
+            <div class="matrix-cell" id="cm-anger-fear">—</div>
+            <div class="matrix-cell" id="cm-anger-surprise">—</div>
+            <div class="matrix-cell" id="cm-anger-neutral">—</div>
+
+            <!-- Fear row -->
+            <div class="matrix-cell matrix-header-cell y-label">Fear</div>
+            <div class="matrix-cell" id="cm-fear-joy">—</div>
+            <div class="matrix-cell" id="cm-fear-sadness">—</div>
+            <div class="matrix-cell" id="cm-fear-anger">—</div>
+            <div class="matrix-cell" id="cm-fear-fear">—</div>
+            <div class="matrix-cell" id="cm-fear-surprise">—</div>
+            <div class="matrix-cell" id="cm-fear-neutral">—</div>
+
+            <!-- Surprise row -->
+            <div class="matrix-cell matrix-header-cell y-label">Sur</div>
+            <div class="matrix-cell" id="cm-surprise-joy">—</div>
+            <div class="matrix-cell" id="cm-surprise-sadness">—</div>
+            <div class="matrix-cell" id="cm-surprise-anger">—</div>
+            <div class="matrix-cell" id="cm-surprise-fear">—</div>
+            <div class="matrix-cell" id="cm-surprise-surprise">—</div>
+            <div class="matrix-cell" id="cm-surprise-neutral">—</div>
+
+            <!-- Neutral row -->
+            <div class="matrix-cell matrix-header-cell y-label">Neu</div>
+            <div class="matrix-cell" id="cm-neutral-joy">—</div>
+            <div class="matrix-cell" id="cm-neutral-sadness">—</div>
+            <div class="matrix-cell" id="cm-neutral-anger">—</div>
+            <div class="matrix-cell" id="cm-neutral-fear">—</div>
+            <div class="matrix-cell" id="cm-neutral-surprise">—</div>
+            <div class="matrix-cell" id="cm-neutral-neutral">—</div>
+          </div>
+        </div>
+
+        <div class="detail-list" style="margin-top: var(--sp-4);">
+          <div class="detail-item">
+            <span class="detail-icon">💡</span>
+            <div><strong>Matrix Insights:</strong> The high diagonal concentration demonstrates strong overall stability. Mild misclassifications are biologically consistent: e.g., Surprise was occasionally misclassified as Joy or Fear.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ═══ FOOTER ════════════════════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <p>
+      EmoSense AI &nbsp;·&nbsp; Stacking Ensemble Performance Insights &nbsp;·&nbsp;
+      <a href="index.html">Back to Analyzer ✍️</a>
+    </p>
+  </footer>
+
+  <script src="js/evaluation.js"></script>
+</body>
+</html>

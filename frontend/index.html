@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EmoSense AI — Emotion Detection</title>
+  <meta name="description" content="State-of-the-art AI emotion detection powered by a hybrid RoBERTa + XGBoost ensemble. Detect joy, sadness, anger, fear, surprise and more instantly." />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body class="dark" data-emotion="neutral">
+
+  <!-- ═══ BACKGROUND ORBS ═══════════════════════════════════════════════ -->
+  <div class="bg-orbs" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ═══ HEADER ════════════════════════════════════════════════════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-icon" aria-hidden="true">🧠</span>
+        <span class="brand-name">EmoSense <span class="brand-ai">AI</span></span>
+      </div>
+
+      <div class="header-right">
+        <!-- API status -->
+        <div class="api-status" id="apiStatus" title="Backend connection status">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-label" id="statusLabel">Connecting…</span>
+        </div>
+
+        <a href="evaluation.html" class="nav-btn" title="Model Insights & Performance Metrics">
+          <span>📊</span> Insights
+        </a>
+
+        <!-- Theme toggle -->
+        <button class="theme-toggle" id="themeToggle" aria-label="Toggle light/dark mode">
+          <span class="theme-icon" id="themeIcon">☀️</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══ MAIN ══════════════════════════════════════════════════════════ -->
+  <main class="main-container">
+
+    <!-- Hero headline -->
+    <section class="hero">
+      <h1 class="hero-title">
+        Detect <span class="gradient-text" id="heroEmotion">Emotions</span>
+        <br />with Precision AI
+      </h1>
+      <p class="hero-sub">
+        Hybrid ensemble of fine-tuned <strong>RoBERTa</strong> + <strong>XGBoost</strong> with NRC lexicon —
+        6 emotion classes detected with deep contextual understanding.
+      </p>
+    </section>
+
+    <!-- Dashboard grid -->
+    <div class="dashboard">
+
+      <!-- ─── LEFT: Input card ─────────────────────────────────────── -->
+      <div class="card input-card">
+        <div class="card-header">
+          <h2 class="card-title">
+            <span class="card-icon">✍️</span> Analyze Text
+          </h2>
+          <span class="char-counter" id="charCounter">0 / 500</span>
+        </div>
+
+        <textarea
+          id="textInput"
+          class="text-input"
+          placeholder="Type or paste any text here — a tweet, message, sentence, or paragraph…"
+          maxlength="500"
+          rows="6"
+          aria-label="Input text for emotion analysis"
+        ></textarea>
+
+        <!-- Sample pills -->
+        <div class="sample-pills" aria-label="Sample text examples">
+          <span class="samples-label">Try:</span>
+          <button class="pill" id="pill-joy"      data-sample="I just got promoted and I couldn't be happier! This is the best day of my life!" aria-label="Joy sample">😊 Joy</button>
+          <button class="pill" id="pill-sadness"  data-sample="I miss my grandmother so much. Life feels so empty without her." aria-label="Sadness sample">😢 Sadness</button>
+          <button class="pill" id="pill-anger"    data-sample="This is completely unacceptable!" aria-label="Anger sample">😡 Anger</button>
+          <button class="pill" id="pill-fear"     data-sample="I have a terrible feeling something bad is about to happen. I'm so scared and anxious." aria-label="Fear sample">😨 Fear</button>
+          <button class="pill" id="pill-surprise" data-sample="I had no idea they were planning a surprise party — I was completely shocked!" aria-label="Surprise sample">😲 Surprise</button>
+          <button class="pill" id="pill-neutral"  data-sample="The meeting is scheduled for Tuesday at 3 PM in the main conference room." aria-label="Neutral sample">😐 Neutral</button>
+        </div>
+
+        <!-- ─── Alpha Blend Slider ─────────────────────────────────── -->
+        <div class="alpha-slider-section" id="alphaSection">
+          <div class="alpha-header">
+            <span class="alpha-label">🧬 Hybrid Blend (α)</span>
+            <span class="alpha-value" id="alphaDisplay">0.70</span>
+          </div>
+          <div class="alpha-track-wrapper">
+            <span class="alpha-endpoint" title="More XGBoost (Semantic)">XGB</span>
+            <input
+              type="range"
+              id="alphaSlider"
+              class="alpha-range"
+              min="0"
+              max="1"
+              step="0.05"
+              value="0.70"
+              aria-label="Ensemble alpha: weight given to RoBERTa"
+            />
+            <span class="alpha-endpoint" title="More RoBERTa (Contextual)">RoBERTa</span>
+          </div>
+          <div class="alpha-hint">
+            α = RoBERTa weight &nbsp;·&nbsp; (1 − α) = XGBoost weight
+          </div>
+        </div>
+
+        <!-- Action buttons -->
+        <div class="action-row">
+          <button class="btn btn-secondary" id="clearBtn" aria-label="Clear text input">
+            <span>✕</span> Clear
+          </button>
+          <button class="btn btn-primary" id="analyzeBtn" disabled aria-label="Analyze emotion">
+            <span class="btn-icon" id="btnIcon">⚡</span>
+            <span id="btnText">Analyze Emotion</span>
+            <span class="btn-loader" id="btnLoader" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- Error message -->
+        <div class="error-banner" id="errorBanner" role="alert" aria-live="polite" hidden>
+          <span class="error-icon">⚠️</span>
+          <span id="errorMsg">An error occurred.</span>
+        </div>
+      </div>
+
+      <!-- ─── RIGHT: Result dashboard ─────────────────────────────── -->
+      <div class="card result-card" id="resultCard">
+
+        <!-- Empty state -->
+        <div class="empty-state" id="emptyState">
+          <div class="empty-orb" aria-hidden="true">🔍</div>
+          <h3>Results will appear here</h3>
+          <p>Enter text and click <strong>Analyze Emotion</strong> to begin.</p>
+        </div>
+
+        <!-- Result content (hidden until prediction) -->
+        <div class="result-content" id="resultContent" hidden>
+
+          <!-- Hero emotion display -->
+          <div class="emotion-hero">
+            <div class="emotion-emoji" id="emotionEmoji" aria-live="polite">😊</div>
+            <div class="emotion-meta">
+              <div class="emotion-name" id="emotionName">Joy</div>
+              <div class="confidence-badge">
+                <span class="confidence-label">Confidence</span>
+                <span class="confidence-value" id="confidenceValue">—</span>
+              </div>
+            </div>
+            <button class="copy-btn" id="copyBtn" aria-label="Copy result to clipboard" title="Copy result">
+              <span id="copyIcon">📋</span>
+            </button>
+          </div>
+
+          <!-- Confidence arc (canvas) -->
+          <div class="chart-section">
+            <div class="donut-wrap">
+              <canvas id="donutChart" width="180" height="180" aria-label="Emotion probability donut chart"></canvas>
+              <div class="donut-center">
+                <span class="donut-pct" id="donutPct">—</span>
+                <span class="donut-label">top match</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Per-emotion probability bars -->
+          <div class="prob-bars" id="probBars" aria-label="Emotion probability breakdown">
+            <!-- Injected by JS -->
+          </div>
+
+          <!-- Processing time -->
+          <div class="proc-time" id="procTime">— ms</div>
+        </div>
+
+      </div>
+    </div><!-- /dashboard -->
+
+    <!-- ─── Bulk CSV Upload ─────────────────────────────────────── -->
+    <section class="batch-section" id="batchSection" aria-labelledby="batchHeading">
+      <div class="card full-width-card">
+        <div class="card-header">
+          <h2 class="card-title" id="batchHeading">
+            <span class="card-icon">📁</span> Bulk CSV Prediction
+          </h2>
+        </div>
+        <p class="batch-desc">
+          Upload a <code>.csv</code> file with a <strong>text</strong> column. Each row will be analyzed through the hybrid ensemble. Max 500 rows.
+        </p>
+
+        <!-- Drop zone -->
+        <div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="Upload CSV file">
+          <div class="drop-zone-inner">
+            <span class="drop-icon" aria-hidden="true">📤</span>
+            <p class="drop-text">Drag & drop a <strong>.csv</strong> file here</p>
+            <p class="drop-sub">or click to browse</p>
+          </div>
+          <input type="file" id="csvFileInput" accept=".csv" hidden />
+        </div>
+
+        <!-- File info -->
+        <div class="batch-file-info" id="batchFileInfo" hidden>
+          <span class="file-icon">📄</span>
+          <span class="file-name" id="batchFileName">—</span>
+          <span class="file-rows" id="batchFileRows">—</span>
+          <button class="btn-ghost" id="batchClearFile" aria-label="Remove uploaded file">✕ Remove</button>
+        </div>
+
+        <!-- Run button -->
+        <div class="action-row" style="margin-top: var(--sp-4);">
+          <button class="btn btn-primary" id="batchRunBtn" disabled aria-label="Run batch prediction">
+            <span class="btn-icon">🚀</span>
+            <span id="batchBtnText">Run Batch Prediction</span>
+            <span class="btn-loader" id="batchBtnLoader" aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="batch-progress" id="batchProgress" hidden>
+          <div class="batch-progress-header">
+            <span id="batchProgressLabel">Processing...</span>
+            <span id="batchProgressPct">0%</span>
+          </div>
+          <div class="batch-progress-track">
+            <div class="batch-progress-fill" id="batchProgressFill"></div>
+          </div>
+        </div>
+
+        <!-- Results summary -->
+        <div class="batch-results" id="batchResults" hidden>
+          <div class="batch-results-header">
+            <h3 class="batch-results-title">
+              <span>✅</span> Results
+              <span class="batch-results-count" id="batchResultsCount">0 rows</span>
+            </h3>
+            <div class="batch-results-actions">
+              <span class="batch-time" id="batchTime">— ms</span>
+              <button class="btn btn-secondary" id="batchDownloadBtn" aria-label="Download results as CSV">
+                <span>📥</span> Download CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Results table -->
+          <div class="batch-table-wrapper">
+            <table class="batch-table" id="batchTable">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Text</th>
+                  <th>Emotion</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody id="batchTableBody">
+                <!-- Populated by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── History panel ─────────────────────────────────────────── -->
+    <section class="history-section" id="historySection" aria-labelledby="historyHeading">
+      <div class="history-header">
+        <h2 class="history-title" id="historyHeading">
+          <span>🕘</span> Prediction History
+          <span class="history-count" id="historyCount">0</span>
+        </h2>
+        <button class="btn-ghost" id="clearHistoryBtn" aria-label="Clear prediction history">Clear all</button>
+      </div>
+      <div class="history-list" id="historyList">
+        <p class="history-empty" id="historyEmpty">No predictions yet.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══ FOOTER ════════════════════════════════════════════════════════ -->
+  <footer class="site-footer">
+    <p>
+      EmoSense AI &nbsp;·&nbsp; RoBERTa + XGBoost Ensemble &nbsp;·&nbsp;
+      <a href="http://localhost:8080/docs" target="_blank" rel="noopener">API Docs ↗</a>
+    </p>
+  </footer>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

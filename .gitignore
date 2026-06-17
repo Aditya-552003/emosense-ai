@@ -1,0 +1,52 @@
+# ────────────────────────────────────────────────────────────────────────
+# EmoSense AI — .gitignore
+# ────────────────────────────────────────────────────────────────────────
+
+# ─── Python ─────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+
+# ─── Virtual environments ──────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ─── Environment / secrets ─────────────────────────────────────────────
+.env
+.env.local
+.env.production
+
+# ─── Model artifacts (large binaries — track via Git LFS or download) ─
+backend/model/*.pkl
+backend/model/*.npy
+backend/model/nrc_lexicon.txt
+backend/model/roberta_best/model.safetensors
+backend/model/roberta_best/tokenizer.json
+
+# ─── Data files ────────────────────────────────────────────────────────
+*.csv
+Data_for_evaluation/
+
+# ─── IDE / Editor ──────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── OS generated ─────────────────────────────────────────────────────
+desktop.ini
+ehthumbs.db
+
+# ─── Logs ──────────────────────────────────────────────────────────────
+*.log
+logs/

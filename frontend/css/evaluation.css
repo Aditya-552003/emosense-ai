@@ -1,0 +1,314 @@
+/* ─── Evaluation Page Specific Styles ──────────────────────────────────────── */
+
+.evaluation-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--sp-6);
+  margin-bottom: var(--sp-8);
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .evaluation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.full-width-card {
+  grid-column: 1 / -1;
+  margin-bottom: var(--sp-6);
+}
+
+/* Architecture Diagram styles */
+.arch-flow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  margin: var(--sp-6) 0;
+  position: relative;
+}
+
+.arch-level {
+  display: flex;
+  justify-content: space-around;
+  gap: var(--sp-4);
+  position: relative;
+}
+
+@media (max-width: 600px) {
+  .arch-level {
+    flex-direction: column;
+    align-items: center;
+  }
+  .arch-connector::after {
+    display: none;
+  }
+}
+
+.arch-box {
+  flex: 1;
+  max-width: 320px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-2);
+  border-radius: var(--r-md);
+  padding: var(--sp-4);
+  text-align: center;
+  position: relative;
+  transition: transform var(--t-fast), box-shadow var(--t-fast);
+}
+
+.arch-box:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px hsla(var(--emo-h, 215), 60%, 50%, 0.15);
+  border-color: var(--emo-color);
+}
+
+.arch-box-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: var(--sp-2);
+  color: var(--emo-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+}
+
+.arch-box-desc {
+  font-size: 0.8rem;
+  color: var(--text-2);
+  line-height: 1.4;
+}
+
+/* Proper Flowchart Connectors */
+.arch-fork {
+  position: relative;
+  width: 100%;
+  height: 40px;
+}
+.arch-fork::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 50%;
+  width: 2px; height: 20px;
+  background: var(--border-2);
+  transform: translateX(-50%);
+}
+.arch-fork::after {
+  content: "";
+  position: absolute;
+  top: 20px; left: 25%; right: 25%;
+  height: 20px;
+  border-top: 2px solid var(--border-2);
+  border-left: 2px solid var(--border-2);
+  border-right: 2px solid var(--border-2);
+  border-radius: 8px 8px 0 0;
+}
+.arch-fork-arrow-l, .arch-fork-arrow-r {
+  position: absolute;
+  top: 28px;
+  color: var(--border-2);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+.arch-fork-arrow-l { left: 25%; transform: translateX(-50%); }
+.arch-fork-arrow-r { right: 25%; transform: translateX(50%); }
+
+.arch-merge {
+  position: relative;
+  width: 100%;
+  height: 40px;
+}
+.arch-merge::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 25%; right: 25%;
+  height: 20px;
+  border-bottom: 2px solid var(--border-2);
+  border-left: 2px solid var(--border-2);
+  border-right: 2px solid var(--border-2);
+  border-radius: 0 0 8px 8px;
+}
+.arch-merge::after {
+  content: "▼";
+  position: absolute;
+  top: 28px; left: 50%;
+  transform: translateX(-50%);
+  color: var(--border-2);
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.arch-connector-mobile {
+  display: none;
+  text-align: center;
+  font-size: 1.5rem;
+  color: var(--border-2);
+  padding: var(--sp-2) 0;
+}
+
+@media (max-width: 600px) {
+  .arch-fork, .arch-merge { display: none; }
+  .arch-connector-mobile { display: block; }
+}
+
+/* Confusion Matrix Heatmap */
+.matrix-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: var(--sp-4) 0;
+  overflow-x: auto;
+  width: 100%;
+  scrollbar-width: none;        /* Firefox */
+  -ms-overflow-style: none;     /* IE/Edge */
+}
+.matrix-container::-webkit-scrollbar {
+  display: none;                /* Chrome/Safari/Opera */
+}
+
+.matrix-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+  min-width: 420px;
+  max-width: 540px;
+  width: 100%;
+}
+
+.matrix-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  border-radius: var(--r-sm);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  color: var(--text);
+  cursor: help;
+  transition: transform var(--t-fast), filter var(--t-fast);
+  position: relative;
+}
+
+.matrix-cell:hover:not(.matrix-header-cell) {
+  transform: scale(1.08);
+  z-index: 10;
+  filter: brightness(1.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.matrix-header-cell {
+  background: transparent;
+  font-weight: 600;
+  color: var(--text-2);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: default;
+}
+
+.matrix-header-cell.y-label {
+  text-align: right;
+  padding-right: var(--sp-2);
+  justify-content: flex-end;
+  align-items: flex-end;
+}
+
+/* Default Heatmap fallback colors */
+.cell-zero { background: var(--surface-2); border: 1px solid var(--border); color: var(--text-3); }
+
+/* Tables */
+.metrics-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  margin: var(--sp-4) 0;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+
+.metrics-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 0.88rem;
+}
+
+.metrics-table th, .metrics-table td {
+  padding: var(--sp-3) var(--sp-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.metrics-table th {
+  background: var(--surface-2);
+  font-family: var(--font-display);
+  font-weight: 600;
+  color: var(--text-2);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.metrics-table tr:last-child td {
+  border-bottom: none;
+}
+
+.metrics-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.row-meta-stacked {
+  background: hsla(var(--neutral-h), 30%, 50%, 0.06);
+  font-weight: 600;
+}
+
+/* Model comparison list details */
+.detail-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.detail-item {
+  display: flex;
+  gap: var(--sp-3);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.detail-icon {
+  font-size: 1.1rem;
+  color: var(--emo-color);
+}
+
+/* Charts Container */
+.chart-container-large {
+  position: relative;
+  width: 100%;
+  height: 240px;
+  margin-top: var(--sp-4);
+}
+
+/* Source Banner */
+.source-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: var(--sp-2) var(--sp-4);
+  font-size: 0.8rem;
+  color: var(--text-2);
+  margin-bottom: var(--sp-6);
+}
+.source-banner .status-pulse {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 6px #22c55e88;
+}
