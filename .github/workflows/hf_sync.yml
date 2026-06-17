@@ -19,7 +19,7 @@ jobs:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           # Configure git credentials
-          git config --global user.email "552003Aditya@gmail.com"
+          git config --global user.email "552003aditya@gmail.com"
           git config --global user.name "Aditya Sharma"
           
           # Add Hugging Face Space as a remote
