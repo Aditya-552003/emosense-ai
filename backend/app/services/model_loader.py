@@ -88,12 +88,18 @@ def load_models() -> None:
     if os.path.isdir(roberta_dir) and os.path.exists(os.path.join(roberta_dir, "model.safetensors")):
         log.info(f"Loading RoBERTa from local directory: {roberta_dir} ...")
         model_source = roberta_dir
+        subfolder = None
     else:
         log.info(f"Loading RoBERTa from Hugging Face Hub repo: {repo_id} ...")
         model_source = repo_id
+        subfolder = "roberta_best"
 
-    _models["tokenizer"] = AutoTokenizer.from_pretrained(model_source, token=token)
-    roberta = AutoModelForSequenceClassification.from_pretrained(model_source, token=token)
+    load_kwargs = {"token": token}
+    if subfolder:
+        load_kwargs["subfolder"] = subfolder
+
+    _models["tokenizer"] = AutoTokenizer.from_pretrained(model_source, **load_kwargs)
+    roberta = AutoModelForSequenceClassification.from_pretrained(model_source, **load_kwargs)
     roberta.to(device)
     roberta.eval()
     # Warm-up pass to pre-compile kernels
