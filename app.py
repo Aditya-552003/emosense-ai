@@ -152,6 +152,13 @@ with gr.Blocks(
 # ── Mount Gradio interface at /gradio so REST API remains on / ────────────
 app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
 
+if __name__ == "__main__":
+    import uvicorn
+
+    port = int(os.environ.get("PORT", 7860))
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
+
 
 
 
