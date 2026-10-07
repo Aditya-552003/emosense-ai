@@ -59,8 +59,10 @@ backend/
 
 ```bash
 cd backend
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
+
+> **⚠️ Windows users:** Always use `python -m pip` instead of `pip` directly. Application Control policies may block `pip.exe` from running.
 
 > **Note:** `numpy<2` is pinned intentionally — NumPy 2.x breaks PyTorch tensor→numpy conversion.
 
@@ -179,7 +181,7 @@ python -m scripts.test_inference
 1. Push the `backend/` folder to a GitHub repo.
 2. Create a new **Web Service** on [render.com](https://render.com).
 3. Set:
-   - **Build Command:** `pip install -r requirements.txt`
+   - **Build Command:** `python -m pip install -r requirements.txt`
    - **Start Command:** `uvicorn app:create_app --factory --host 0.0.0.0 --port $PORT`
 4. Upload the `model/` directory as a Render **Persistent Disk** (or pre-bake into the image).
 

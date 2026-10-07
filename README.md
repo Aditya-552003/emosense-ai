@@ -3,8 +3,9 @@ title: EmoSense AI
 emoji: 🧠
 colorFrom: blue
 colorTo: indigo
-sdk: docker
-app_port: 7860
+sdk: gradio
+sdk_version: 5.29.1
+app_file: app.py
 pinned: false
 ---
 
@@ -20,6 +21,9 @@ A full-stack AI emotion detection system powered by a **hybrid stacking ensemble
 
 ```
 emotion_model/
+├── app.py                      # HF Spaces Gradio entry point
+├── requirements.txt            # Root deps (for HF Spaces)
+├── Dockerfile                  # Docker deployment (optional)
 ├── backend/                    # FastAPI backend
 │   ├── app/                    # Application package
 │   │   ├── __init__.py         # App factory (create_app)
@@ -36,7 +40,7 @@ emotion_model/
 │   │       └── preprocessing.py# Text cleaning & NRC features
 │   ├── model/                  # ML model artifacts
 │   ├── scripts/                # Standalone evaluation & test scripts
-│   ├── requirements.txt
+│   ├── requirements.txt        # Backend-only deps
 │   └── start_server.bat
 ├── frontend/                   # Static web UI
 │   ├── css/                    # Stylesheets
@@ -69,8 +73,10 @@ emotion_model/
 
 ```bash
 cd backend
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
+
+> **⚠️ Windows users:** Always use `python -m pip` instead of `pip` directly. Application Control policies may block `pip.exe` from running.
 
 > **Note:** `numpy<2` is pinned — NumPy 2.x breaks PyTorch tensor→numpy conversion.
 

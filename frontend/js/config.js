@@ -3,9 +3,14 @@
  *
  * All shared configuration values live here so they can be imported
  * by any module without circular dependencies.
+ *
+ * API_BASE resolution order:
+ *  1. <meta name="api-base" content="..."> tag in HTML (for overrides)
+ *  2. Same origin (when frontend is served by the backend, e.g. local dev)
  */
 
-export const API_BASE    = window.location.origin;
+const metaApiBase = document.querySelector('meta[name="api-base"]')?.content;
+export const API_BASE = metaApiBase || window.location.origin;
 export const MAX_CHARS   = 500;
 export const HISTORY_KEY = "emosense_history";
 export const MAX_HISTORY = 20;
