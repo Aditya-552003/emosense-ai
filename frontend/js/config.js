@@ -11,7 +11,7 @@
 
 const metaApiBase = document.querySelector('meta[name="api-base"]')?.content;
 export const API_BASE = metaApiBase || window.location.origin;
-export const MAX_CHARS   = 500;
+export const MAX_CHARS   = 2000;
 export const HISTORY_KEY = "emosense_history";
 export const MAX_HISTORY = 20;
 

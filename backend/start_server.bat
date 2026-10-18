@@ -7,7 +7,7 @@ echo.
 
 :: Kill anything still on port 8080
 for /f "tokens=5" %%a in ('netstat -ano 2^>nul ^| findstr ":8080 " ^| findstr "LISTENING"') do (
-    echo  Freeing port 8080 (PID %%a) ...
+    echo  Freeing port 8080 [PID %%a] ...
     taskkill /PID %%a /F >nul 2>&1
 )
 
@@ -19,4 +19,4 @@ echo  Press Ctrl+C to stop.
 echo.
 
 cd /d "%~dp0"
-uvicorn app:create_app --factory --host 127.0.0.1 --port 8080
+python -m uvicorn app:create_app --factory --host 127.0.0.1 --port 8080
