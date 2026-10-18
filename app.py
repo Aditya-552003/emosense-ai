@@ -1,22 +1,26 @@
 """
 app.py — Hugging Face Spaces entry point.
 
-Mounts the full FastAPI backend (with all existing REST endpoints)
+Mounts the full FastAPI backend (with all REST endpoints)
 inside a Gradio app using gr.mount_gradio_app, so BOTH the Gradio UI
 and the JSON API coexist on the same port.
 
 HF Spaces (Gradio SDK) looks for this file at the project root.
 """
 
-import sys
+import logging
 import os
+import sys
 
-# Add backend/ to sys.path so `app.*` imports resolve correctly
-_BACKEND_DIR = os.path.join(os.path.dirname(__file__), "backend")
-sys.path.insert(0, _BACKEND_DIR)
+# Ensure backend/ is at index 0 on sys.path
+_BACKEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
 
 import gradio as gr
 from app import create_app  # noqa: E402 — FastAPI factory
+
+log = logging.getLogger("emosense.gradio")
 
 # ── Create the FastAPI app (loads models via lifespan) ────────────────────
 fastapi_app = create_app()
@@ -42,33 +46,45 @@ EMOTION_COLORS = {
 
 
 def predict_emotion(text: str) -> tuple:
-    """Run the ensemble inference and return formatted results."""
+    """Run ensemble inference with length validation and safe exception handling."""
     if not text or not text.strip():
         return "⚠️ Please enter some text.", None
 
-    from app.services.inference import run_inference
+    clean_input = text.strip()
+    if len(clean_input) > 2000:
+        return (
+            f"⚠️ Input text is too long ({len(clean_input)} chars). "
+            f"Maximum allowed length is 2000 characters.",
+            None,
+        )
 
-    result = run_inference(text.strip())
+    try:
+        from app.services.inference import run_inference
 
-    emotion = result["predicted_emotion"]
-    emoji = EMOTION_EMOJI.get(emotion, "🤔")
-    confidence = result["confidence"]
-    time_ms = result["processing_time_ms"]
+        result = run_inference(clean_input, alpha=0.7)
 
-    # Build the headline
-    headline = (
-        f"## {emoji} **{emotion.upper()}**\n\n"
-        f"**Confidence:** {confidence:.1%}  \n"
-        f"**Processing time:** {time_ms:.0f}ms"
-    )
+        emotion = result["predicted_emotion"]
+        emoji = EMOTION_EMOJI.get(emotion, "🤔")
+        confidence = result["confidence"]
+        time_ms = result["processing_time_ms"]
 
-    # Build probability bars (dict for gr.Label)
-    prob_dict = {
-        f"{EMOTION_EMOJI.get(k, '')} {k}": v
-        for k, v in result["probabilities"].items()
-    }
+        # Build headline
+        headline = (
+            f"## {emoji} **{emotion.upper()}**\n\n"
+            f"**Confidence:** {confidence:.1%}  \n"
+            f"**Processing time:** {time_ms:.1f}ms"
+        )
 
-    return headline, prob_dict
+        # Build probability bars
+        prob_dict = {
+            f"{EMOTION_EMOJI.get(k, '')} {k}": v
+            for k, v in result["probabilities"].items()
+        }
+
+        return headline, prob_dict
+    except Exception as exc:
+        log.exception("Gradio inference failed: %s", exc)
+        return "⚠️ Emotion analysis could not be completed. Please try again later.", None
 
 
 # ── Build Gradio UI ──────────────────────────────────────────────────────
@@ -98,7 +114,7 @@ with gr.Blocks(
     with gr.Row():
         with gr.Column(scale=1):
             text_input = gr.Textbox(
-                label="Enter your text",
+                label="Enter your text (max 2000 characters)",
                 placeholder="Type something like: I am absolutely thrilled about this project!",
                 lines=4,
                 max_lines=10,
@@ -144,7 +160,7 @@ with gr.Blocks(
     gr.Markdown(
         "---\n"
         "**API Endpoints** also available: "
-        "`POST /predict` · `POST /predict/batch` · `GET /` (health check)  \n"
+        "`POST /predict` · `POST /predict/batch` · `GET /` (health check) · `GET /health/ready`  \n"
         "Built with ❤️ using FastAPI + Gradio"
     )
 
@@ -157,8 +173,3 @@ if __name__ == "__main__":
 
     port = int(os.environ.get("PORT", 7860))
     uvicorn.run(app, host="0.0.0.0", port=port)
-
-
-
-
-

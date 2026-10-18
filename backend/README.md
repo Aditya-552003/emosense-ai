@@ -1,11 +1,11 @@
 # 🧠 Emotion Detection API — Backend
 
-A production-ready **FastAPI** backend that serves a hybrid stacking ensemble emotion classifier, combining:
-- 🤗 **RoBERTa** (fine-tuned) — deep contextual understanding
-- 🌲 **XGBoost** on TF-IDF + NRC Emotion Lexicon features — semantic signal
-- 📊 **Dynamic alpha-weighted soft voting** blending both branches
+A production-hardened **FastAPI** backend serving a hybrid multi-branch emotion classifier combining:
+- 🤗 **RoBERTa** (fine-tuned) — deep contextual text semantics
+- 🌲 **XGBoost** on word TF-IDF, character TF-IDF, and NRC Emotion Lexicon density features — semantic lexicon signal
+- 📊 **Dynamic Alpha-Weighted Soft Voting** ($P = \alpha P_{\text{RoBERTa}} + (1 - \alpha) P_{\text{XGBoost}}$) with optional **Stacking Meta-Classifier** support
 
-**Detects 6 emotions:** `anger` · `fear` · `joy` · `neutral` · `sadness` · `surprise`
+**Detects 6 standard emotion categories:** `anger` · `fear` · `joy` · `neutral` · `sadness` · `surprise`
 
 ---
 
@@ -14,40 +14,36 @@ A production-ready **FastAPI** backend that serves a hybrid stacking ensemble em
 ```
 backend/
 ├── app/                        # Application package
-│   ├── __init__.py             # App factory (create_app)
-│   ├── config.py               # Environment-based settings
+│   ├── __init__.py             # App factory (create_app), lifespan, CORS, error handling
+│   ├── config.py               # Centralized configuration & environment variables
 │   ├── routes/                 # API endpoint handlers
 │   │   ├── __init__.py
-│   │   ├── health.py           # GET /
+│   │   ├── health.py           # GET /, GET /health/live, GET /health/ready
 │   │   └── predict.py          # POST /predict, POST /predict/batch
-│   ├── schemas/                # Pydantic request/response models
+│   ├── schemas/                # Pydantic request & response validation schemas
 │   │   ├── __init__.py
-│   │   └── predict.py          # PredictRequest, PredictResponse
-│   ├── services/               # Business logic
+│   │   └── predict.py          # PredictRequest, PredictResponse, BatchPredictResponse
+│   ├── services/               # Core business & ML logic
 │   │   ├── __init__.py
-│   │   ├── inference.py        # Full ensemble inference pipeline
-│   │   └── model_loader.py     # Model lifecycle management
+│   │   ├── inference.py        # Vectorized batch & single inference, probability normalization
+│   │   └── model_loader.py     # Thread-safe model lifecycle, readiness, & HF Hub downloader
 │   └── utils/                  # Shared utilities
 │       ├── __init__.py
-│       └── preprocessing.py    # Text cleaning + NRC features
-├── model/                      # ML model artifacts
-│   ├── xgb.pkl                 # XGBoost model
+│       └── preprocessing.py    # Training-compatible clean_text & NRC lexicon feature extractor
+├── model/                      # ML model artifacts (local or auto-downloaded)
+│   ├── xgb.pkl                 # XGBoost classifier
 │   ├── word_tfidf.pkl          # Word-level TF-IDF vectorizer
 │   ├── char_tfidf.pkl          # Character-level TF-IDF vectorizer
-│   ├── nrc_scaler.pkl          # StandardScaler for NRC features
-│   ├── label_encoder.pkl       # LabelEncoder (6 classes)
-│   ├── meta_clf.pkl            # Stacking LogisticRegression
-│   ├── nrc_lexicon.txt         # Auto-downloaded on first run
-│   └── roberta_best/           # Fine-tuned RoBERTa weights
-│       ├── config.json
-│       ├── model.safetensors
-│       ├── tokenizer.json
-│       └── tokenizer_config.json
-├── scripts/                    # Standalone CLI utilities
-│   ├── evaluate_model.py       # Generate metrics.json from dataset
-│   └── test_inference.py       # Quick smoke-test
-├── requirements.txt
-├── start_server.bat
+│   ├── nrc_scaler.pkl          # StandardScaler for NRC density features
+│   ├── label_encoder.pkl       # LabelEncoder mapping 6 classes
+│   ├── meta_clf.pkl            # Stacking LogisticRegression meta-learner
+│   ├── nrc_lexicon.txt         # NRC Emotion Lexicon v0.92
+│   └── roberta_best/           # Fine-tuned RoBERTa transformer weights
+├── scripts/                    # CLI evaluation & smoke-test scripts
+│   ├── evaluate_model.py       # Empirical model evaluation generating frontend/metrics.json
+│   └── test_inference.py       # End-to-end smoke test script
+├── requirements.txt            # Constrained Python runtime dependencies
+├── start_server.bat            # Windows startup script
 └── README.md
 ```
 
@@ -55,148 +51,80 @@ backend/
 
 ## ⚡ Quick Start (Local)
 
-### 1. Install dependencies
-
+### 1. Install Dependencies
 ```bash
-cd backend
-python -m pip install -r requirements.txt
+# Recommended Python version: 3.10
+python -m pip install -r backend/requirements.txt
 ```
 
-> **⚠️ Windows users:** Always use `python -m pip` instead of `pip` directly. Application Control policies may block `pip.exe` from running.
+> **Note on Dependencies:** `transformers<5.0.0` is pinned to maintain binary compatibility with PyTorch 2.x. `numpy<2.0.0` is constrained for PyTorch tensor compatibility.
 
-> **Note:** `numpy<2` is pinned intentionally — NumPy 2.x breaks PyTorch tensor→numpy conversion.
-
-### 2. Start the server
-
+### 2. Start the Server
 ```bash
-# Windows
-start_server.bat
+# Windows bat runner
+backend\start_server.bat
 
-# Or manually
+# Or manual execution via uvicorn factory
 uvicorn app:create_app --factory --host 127.0.0.1 --port 8080
 ```
 
-The NRC Emotion Lexicon is downloaded automatically on the first startup (~2.5 MB).
+### 3. Verify Health & Readiness
+```bash
+# Liveness probe
+curl http://127.0.0.1:8080/health/live
 
-### 3. Verify it's running
+# Readiness probe
+curl http://127.0.0.1:8080/health/ready
+```
+
+---
+
+## 🔧 Configuration & Environment Variables
+
+Settings can be customized via `.env` or direct environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `HOST` | `127.0.0.1` | Bind host address |
+| `PORT` | `8080` | Bind port number |
+| `CORS_ORIGINS` | `http://127.0.0.1:8080,...` | Comma-separated allowed origins (wildcard `*` disables credentials) |
+| `LOG_LEVEL` | `INFO` | Logging verbosity (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `MODEL_DIR` | `model` | Directory for model artifacts (relative to `backend/` or absolute) |
+| `MAX_CHARS` | `2000` | Maximum allowed character length per input text |
+| `MAX_BATCH_ROWS` | `500` | Maximum rows processed per CSV batch upload |
+| `MAX_UPLOAD_SIZE_BYTES` | `5242880` (5 MB) | Maximum uploaded CSV file size before rejection |
+| `MAX_CONCURRENT_INFERENCES` | `4` | Concurrency semaphore limit protecting CPU/GPU memory |
+| `HF_MODEL_REPO` | `DSAditya552003/emosense-ai-model` | Hugging Face Hub repository for missing artifacts |
+| `HF_MODEL_REVISION` | `main` | Pinned commit hash or branch on Hugging Face Hub |
+| `HF_TOKEN` | `""` | Optional Hugging Face auth token for private repositories |
+
+---
+
+## 📡 API Reference Summary
+
+- `GET /`: API overview and capability metadata.
+- `GET /health/live`: Lightweight process liveness check (`200 OK`).
+- `GET /health/ready`: Lifecycle readiness probe (`200 OK` or `503 Service Unavailable`).
+- `POST /predict`: Single emotion analysis. Accepts JSON `{ "text": "...", "alpha": 0.7 }`. Returns predicted label, confidence, per-class probabilities, and latency.
+- `POST /predict/batch`: Bounded multipart CSV batch classification. Vectorized inference across up to 500 rows.
+
+---
+
+## 🧪 Testing
+
+The repository includes a comprehensive 45-test automated pytest suite:
 
 ```bash
-curl http://localhost:8080/
+# Run all unit and API tests
+python -m pytest tests/
+
+# Run with verbose output
+python -m pytest tests/ -v
 ```
-
----
-
-## 📡 API Reference
-
-### `GET /`
-
-Health check and status endpoint.
-
-**Response:**
-```json
-{
-  "status": "online",
-  "api": "Emotion Detection API",
-  "version": "1.0.0",
-  "device": "cpu",
-  "emotion_classes": ["anger","fear","joy","neutral","sadness","surprise"],
-  "endpoints": { ... }
-}
-```
-
----
-
-### `POST /predict`
-
-Analyze the emotion in a text string.
-
-**Request body:**
-```json
-{ "text": "I am absolutely thrilled about this project!" }
-```
-
-**Response:**
-```json
-{
-  "success": true,
-  "predicted_emotion": "joy",
-  "confidence": 0.9423,
-  "confidence_pct": "94.2%",
-  "probabilities": {
-    "anger":   0.0121,
-    "fear":    0.0087,
-    "joy":     0.9423,
-    "neutral": 0.0098,
-    "sadness": 0.0204,
-    "surprise": 0.0067
-  },
-  "processing_time_ms": 312.5
-}
-```
-
-**Validation errors:**
-```json
-{ "detail": [{ "msg": "Input text must not be empty." }] }
-```
-
----
-
-### `POST /predict/batch`
-
-Upload a CSV file with a `text` column. Returns predictions for every row (max 500).
-
----
-
-## 🔧 Configuration
-
-Settings are loaded from environment variables (or a `.env` file in the project root).
-
-| Variable       | Default     | Description                                       |
-|----------------|-------------|---------------------------------------------------|
-| `HOST`         | `127.0.0.1` | Server bind address                               |
-| `PORT`         | `8080`      | Server port                                       |
-| `CORS_ORIGINS` | `*`         | Comma-separated allowed origins                   |
-| `LOG_LEVEL`    | `INFO`      | Logging level (DEBUG, INFO, WARNING, ERROR)        |
-| `MODEL_DIR`    | `model`     | Model artifacts directory (relative to backend/)   |
-
----
-
-## 🚀 Scripts
-
-```bash
-# Generate live evaluation metrics
-cd backend
-python -m scripts.evaluate_model
-
-# Quick smoke-test
-python -m scripts.test_inference
-```
-
----
-
-## 🌐 Deployment
-
-### Render (recommended free tier)
-
-1. Push the `backend/` folder to a GitHub repo.
-2. Create a new **Web Service** on [render.com](https://render.com).
-3. Set:
-   - **Build Command:** `python -m pip install -r requirements.txt`
-   - **Start Command:** `uvicorn app:create_app --factory --host 0.0.0.0 --port $PORT`
-4. Upload the `model/` directory as a Render **Persistent Disk** (or pre-bake into the image).
-
-### Railway
-
-```bash
-railway init
-railway up
-```
-
-Set `START_COMMAND = uvicorn app:create_app --factory --host 0.0.0.0 --port $PORT`.
 
 ---
 
 ## 📄 Citation
 
-If you use the NRC Emotion Lexicon in your research:
+NRC Emotion Lexicon:
 > Mohammad, S. & Turney, P. (2013). *Crowdsourcing a Word-Emotion Association Lexicon.* Computational Intelligence, 29(3), 436–465.

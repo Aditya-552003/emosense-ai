@@ -1,133 +1,231 @@
 """
 services/model_loader.py — ML model lifecycle management.
 
-Loads all model artifacts (sklearn, XGBoost, RoBERTa) at startup and
-provides a module-level accessor for the shared model registry.
+Loads all model artifacts (sklearn, XGBoost, RoBERTa) at startup,
+verifies artifact consistency and class alignment, and provides a
+thread-safe model registry and readiness checking.
 """
 
+import gc
 import logging
 import os
 import pickle
-from typing import Dict
+from enum import Enum
+from typing import Any, Dict, Optional
 
 import joblib
 import torch
-from transformers import AutoTokenizer, AutoModelForSequenceClassification
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from app.config import MODEL_DIR, NRC_PATH, ROBERTA_DIR
+from app.config import (
+    HF_MODEL_REPO,
+    HF_MODEL_REVISION,
+    HF_TOKEN,
+    MODEL_DIR,
+    NRC_PATH,
+    ROBERTA_DIR,
+)
 from app.utils.preprocessing import download_nrc_lexicon, load_nrc_lexicon
 
 log = logging.getLogger(__name__)
 
-# ---------------------------------------------------------------------------
-# Module-level model registry (singleton, populated during startup)
-# ---------------------------------------------------------------------------
-_models: Dict = {}
+
+class ModelState(str, Enum):
+    UNINITIALIZED = "uninitialized"
+    LOADING = "loading"
+    READY = "ready"
+    FAILED = "failed"
 
 
-def get_models() -> Dict:
-    """Return the shared model registry.  Must be called after load_models()."""
+# ---------------------------------------------------------------------------
+# Module-level model registry (singleton)
+# ---------------------------------------------------------------------------
+_models: Dict[str, Any] = {}
+_state: ModelState = ModelState.UNINITIALIZED
+_state_error: Optional[str] = None
+
+
+def get_model_state() -> ModelState:
+    """Return the current model lifecycle state."""
+    return _state
+
+
+def is_model_ready() -> bool:
+    """Return True if all models are loaded and verified."""
+    return _state == ModelState.READY
+
+
+def get_model_error() -> Optional[str]:
+    """Return the last startup error message, if any."""
+    return _state_error
+
+
+def get_models() -> Dict[str, Any]:
+    """
+    Return the shared model registry.
+    Raises RuntimeError if models have not completed initialization.
+    """
+    if _state != ModelState.READY:
+        raise RuntimeError(
+            f"Model registry is not ready. Current state: {_state.value}. "
+            f"Details: {_state_error or 'Startup in progress or not triggered.'}"
+        )
     return _models
 
 
 def load_models() -> None:
     """
-    Load all ML artifacts into the module-level registry.
-
-    Called once during the FastAPI lifespan startup event.
+    Load and verify all ML artifacts into the module-level registry.
+    Atomically transitions state from UNINITIALIZED -> LOADING -> READY (or FAILED).
     """
-    log.info("=" * 55)
-    log.info("  Emotion Detection API  --  starting up")
-    log.info("=" * 55)
+    global _state, _state_error
+    _state = ModelState.LOADING
+    _state_error = None
 
-    # 1. NRC Emotion Lexicon
-    download_nrc_lexicon(str(NRC_PATH))
-    nrc_dict, nrc_emotions = load_nrc_lexicon(str(NRC_PATH))
-    _models["nrc_dict"] = nrc_dict
-    _models["nrc_emotions"] = nrc_emotions
-    log.info(f"NRC Lexicon loaded  ({len(nrc_emotions)} emotion categories)")
+    loaded: Dict[str, Any] = {}
 
-    # 2. Sklearn / joblib artifacts
-    log.info("Loading sklearn artifacts ...")
-    from huggingface_hub import hf_hub_download
-    repo_id = os.getenv("HF_MODEL_REPO", "DSAditya552003/emosense-ai-model")
-    token = os.getenv("HF_TOKEN")
+    log.info("=" * 60)
+    log.info("  Loading ML artifacts (Model Directory: %s)", MODEL_DIR)
+    log.info("=" * 60)
 
-    def _load_artifact(name: str, is_pickle: bool = False):
-        local_path = os.path.join(MODEL_DIR, name)
-        if os.path.exists(local_path):
-            log.info(f"Loading {name} from local storage...")
-            path_to_load = local_path
-        else:
-            log.info(f"Downloading {name} from Hugging Face Hub ({repo_id})...")
-            try:
-                path_to_load = hf_hub_download(repo_id=repo_id, filename=name, token=token)
-            except Exception as e:
-                log.error(f"Failed to download {name} from HF Hub: {e}")
-                raise FileNotFoundError(f"Model artifact {name} not found locally or on HF Hub.") from e
+    try:
+        # 1. NRC Emotion Lexicon
+        nrc_file = str(NRC_PATH)
+        download_nrc_lexicon(nrc_file)
+        nrc_dict, nrc_emotions = load_nrc_lexicon(nrc_file)
+        loaded["nrc_dict"] = nrc_dict
+        loaded["nrc_emotions"] = nrc_emotions
+        log.info("Loaded NRC Lexicon (%d emotion categories)", len(nrc_emotions))
 
-        if is_pickle:
-            with open(path_to_load, "rb") as f:
-                return pickle.load(f)
-        else:
+        # 2. Sklearn / joblib / pickle artifacts
+        token = HF_TOKEN if HF_TOKEN else None
+
+        def _load_artifact(name: str, is_pickle: bool = False) -> Any:
+            local_path = os.path.join(MODEL_DIR, name)
+            if os.path.exists(local_path):
+                log.info("Loading artifact '%s' from local storage...", name)
+                path_to_load = local_path
+            else:
+                log.info(
+                    "Downloading artifact '%s' from HF Hub (%s @ %s)...",
+                    name,
+                    HF_MODEL_REPO,
+                    HF_MODEL_REVISION,
+                )
+                from huggingface_hub import hf_hub_download
+
+                try:
+                    path_to_load = hf_hub_download(
+                        repo_id=HF_MODEL_REPO,
+                        filename=name,
+                        revision=HF_MODEL_REVISION,
+                        token=token,
+                    )
+                except Exception as exc:
+                    log.error("Failed to download %s from HF Hub: %s", name, exc)
+                    raise FileNotFoundError(
+                        f"Model artifact '{name}' could not be found locally at {local_path} "
+                        f"or downloaded from Hugging Face Hub ({HF_MODEL_REPO})."
+                    ) from exc
+
+            if is_pickle:
+                with open(path_to_load, "rb") as f:
+                    return pickle.load(f)
             return joblib.load(path_to_load)
 
-    _models["word_tfidf"] = _load_artifact("word_tfidf.pkl")
-    _models["char_tfidf"] = _load_artifact("char_tfidf.pkl")
-    _models["nrc_scaler"] = _load_artifact("nrc_scaler.pkl")
-    _models["xgb"] = _load_artifact("xgb.pkl")
-    _models["meta_clf"] = _load_artifact("meta_clf.pkl")
-    _models["label_encoder"] = _load_artifact("label_encoder.pkl", is_pickle=True)
-    log.info("Sklearn artifacts loaded.")
+        loaded["word_tfidf"] = _load_artifact("word_tfidf.pkl")
+        loaded["char_tfidf"] = _load_artifact("char_tfidf.pkl")
+        loaded["nrc_scaler"] = _load_artifact("nrc_scaler.pkl")
+        loaded["xgb"] = _load_artifact("xgb.pkl")
+        loaded["meta_clf"] = _load_artifact("meta_clf.pkl")
+        loaded["label_encoder"] = _load_artifact("label_encoder.pkl", is_pickle=True)
 
-    # 3. RoBERTa
-    device = "cuda" if torch.cuda.is_available() else "cpu"
-    _models["device"] = device
+        # 3. RoBERTa Transformer
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        loaded["device"] = device
 
-    roberta_dir = str(ROBERTA_DIR)
-    if os.path.isdir(roberta_dir) and os.path.exists(os.path.join(roberta_dir, "model.safetensors")):
-        log.info(f"Loading RoBERTa from local directory: {roberta_dir} ...")
-        model_source = roberta_dir
-        subfolder = None
-    else:
-        log.info(f"Loading RoBERTa from Hugging Face Hub repo: {repo_id} ...")
-        model_source = repo_id
-        subfolder = "roberta_best"
+        roberta_dir = str(ROBERTA_DIR)
+        has_local_roberta = os.path.isdir(roberta_dir) and (
+            os.path.exists(os.path.join(roberta_dir, "model.safetensors"))
+            or os.path.exists(os.path.join(roberta_dir, "pytorch_model.bin"))
+        )
 
-    load_kwargs = {"token": token}
-    if subfolder:
-        load_kwargs["subfolder"] = subfolder
+        if has_local_roberta:
+            log.info("Loading RoBERTa from local directory: %s", roberta_dir)
+            model_source = roberta_dir
+            subfolder = None
+        else:
+            log.info(
+                "Loading RoBERTa from HF Hub (%s @ %s, subfolder: roberta_best)...",
+                HF_MODEL_REPO,
+                HF_MODEL_REVISION,
+            )
+            model_source = HF_MODEL_REPO
+            subfolder = "roberta_best"
 
-    _models["tokenizer"] = AutoTokenizer.from_pretrained(model_source, **load_kwargs)
-    roberta = AutoModelForSequenceClassification.from_pretrained(model_source, **load_kwargs)
-    roberta.to(device)
-    roberta.eval()
-    # Warm-up pass to pre-compile kernels
-    _warmup(roberta, _models["tokenizer"], device)
-    _models["roberta"] = roberta
-    log.info(f"RoBERTa loaded on {device.upper()}")
+        load_kwargs: Dict[str, Any] = {"revision": HF_MODEL_REVISION}
+        if token:
+            load_kwargs["token"] = token
+        if subfolder:
+            load_kwargs["subfolder"] = subfolder
 
-    log.info("All models ready  [OK]")
-    log.info("=" * 55)
+        tokenizer = AutoTokenizer.from_pretrained(model_source, **load_kwargs)
+        roberta = AutoModelForSequenceClassification.from_pretrained(model_source, **load_kwargs)
+        roberta.to(device)
+        roberta.eval()
+
+        # Warm-up pass
+        _warmup(roberta, tokenizer, device)
+
+        loaded["tokenizer"] = tokenizer
+        loaded["roberta"] = roberta
+        log.info("RoBERTa loaded and warmed up on %s", device.upper())
+
+        # 4. Consistency & class alignment verification
+        classes = loaded["label_encoder"].classes_.tolist()
+        expected_classes = ["anger", "fear", "joy", "neutral", "sadness", "surprise"]
+        if classes != expected_classes:
+            log.warning("Label encoder classes %s differ from documented %s", classes, expected_classes)
+
+        meta_features = getattr(loaded["meta_clf"], "n_features_in_", None)
+        if meta_features is not None and meta_features != 12:
+            raise ValueError(f"meta_clf expected 12 input features, found {meta_features}")
+
+        # Swap atomically into registry
+        _models.clear()
+        _models.update(loaded)
+        _state = ModelState.READY
+        log.info("All model artifacts loaded and verified [OK]")
+        log.info("=" * 60)
+
+    except Exception as exc:
+        _state = ModelState.FAILED
+        _state_error = str(exc)
+        _models.clear()
+        log.error("Model loading failed: %s", exc, exc_info=True)
+        raise
 
 
 def unload_models() -> None:
-    """Release model references on shutdown."""
+    """Release all model references and free PyTorch / GPU memory."""
+    global _state, _state_error
     _models.clear()
-    log.info("Models unloaded.")
+    _state = ModelState.UNINITIALIZED
+    _state_error = None
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    log.info("All models unloaded successfully.")
 
 
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
-def _warmup(model, tokenizer, device: str) -> None:
-    """Run a single dummy inference to warm up PyTorch JIT / cuDNN."""
+def _warmup(model: Any, tokenizer: Any, device: str) -> None:
+    """Run a single warmup forward pass to pre-compile execution kernels."""
     enc = tokenizer(
-        ["warm up"],
+        ["warmup"],
         padding=True,
         truncation=True,
         max_length=128,
         return_tensors="pt",
     ).to(device)
-    with torch.no_grad():
+    with torch.inference_mode():
         model(**enc)

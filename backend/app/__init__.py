@@ -1,18 +1,9 @@
 """
 app — FastAPI application package for EmoSense AI.
 
-Provides the ``create_app()`` factory function which assembles the
+Provides the create_app() factory function which assembles the
 FastAPI instance with middleware, lifespan events, routes, and
 static-file serving.
-
-Usage
------
-    # Via uvicorn factory
-    uvicorn app:create_app --factory --host 127.0.0.1 --port 8080
-
-    # Or direct import
-    from app import create_app
-    app = create_app()
 """
 
 import logging
@@ -44,9 +35,15 @@ log = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load ML artifacts on startup; release on shutdown."""
-    load_models()
+    log.info("=" * 60)
+    log.info("  EmoSense AI — Starting up")
+    log.info("=" * 60)
+    try:
+        load_models()
+    except Exception as exc:
+        log.critical("Failed to initialize models during startup: %s", exc, exc_info=True)
     yield
-    log.info("Shutting down ...")
+    log.info("EmoSense AI shutting down...")
     unload_models()
 
 
@@ -67,9 +64,9 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.CORS_ORIGINS,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_credentials=config.CORS_ALLOW_CREDENTIALS,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
     )
 
     # ── Register routers ─────────────────────────────────────────────────
@@ -87,14 +84,14 @@ def create_app() -> FastAPI:
             StaticFiles(directory=frontend_dir, html=True),
             name="frontend",
         )
-        log.info(f"Serving frontend at /ui  →  {frontend_dir}")
+        log.info("Serving frontend at /ui -> %s", frontend_dir)
     else:
-        log.warning(f"Frontend directory not found: {frontend_dir}")
+        log.warning("Frontend directory not found: %s", frontend_dir)
 
     # ── Global exception handler ─────────────────────────────────────────
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
-        log.error(f"Unhandled error on {request.url}: {exc}")
+        log.exception("Unhandled exception on %s %s", request.method, request.url)
         return JSONResponse(
             status_code=500,
             content={"success": False, "detail": "Internal server error."},
