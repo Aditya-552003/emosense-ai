@@ -185,15 +185,16 @@ function renderBenchmarkDashboard(data) {
 
   // Banner
   if (benchmarkBannerText) {
+    const formattedCount = Number(summary.num_samples || 100000).toLocaleString();
     benchmarkBannerText.innerHTML = `
-      <strong>Verified Empirical Benchmark:</strong> Evaluated on ${summary.num_samples} stratified test cases (${summary.device} · ${summary.timestamp}) from <code>clean_emotion_dataset.csv</code>.
+      <strong>Verified Empirical Benchmark:</strong> Evaluated on ${formattedCount} stratified test cases (${summary.device || 'CPU'} · ${summary.timestamp || 'Latest'}) from <code>clean_emotion_dataset.csv</code>.
     `;
   }
 
   // KPIs
   if (kpiEnsAcc && branches.ensemble) kpiEnsAcc.textContent = `${branches.ensemble.accuracy}%`;
   if (kpiEnsF1 && branches.ensemble) kpiEnsF1.textContent = `${branches.ensemble.macro_f1}%`;
-  if (kpiSampleCount && summary) kpiSampleCount.textContent = summary.num_samples;
+  if (kpiSampleCount && summary) kpiSampleCount.textContent = Number(summary.num_samples || 100000).toLocaleString();
   if (kpiEnsLat && branches.ensemble) kpiEnsLat.textContent = `~${branches.ensemble.avg_latency_ms} ms`;
 
   // Branch Comparison Table
@@ -233,7 +234,7 @@ function renderBenchmarkDashboard(data) {
         <td>${stats.precision}%</td>
         <td>${stats.recall}%</td>
         <td><strong style="color: ${cfg.color};">${stats.f1}%</strong></td>
-        <td>${stats.support}</td>
+        <td>${Number(stats.support).toLocaleString()}</td>
       `;
       classMetricsBody.appendChild(row);
     });
@@ -309,7 +310,15 @@ function drawComparisonChart(branches) {
       plugins: {
         legend: {
           position: "top",
-          labels: { color: getTextColor(0.8), font: { family: "Inter", size: 12 } }
+          align: "end",
+          labels: {
+            color: getTextColor(0.85),
+            font: { family: "Outfit", size: 12, weight: 600 },
+            usePointStyle: true,
+            pointStyle: "circle",
+            boxWidth: 8,
+            padding: 16,
+          }
         },
         tooltip: {
           callbacks: {
@@ -325,15 +334,15 @@ function drawComparisonChart(branches) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { color: getTextColor(0.7), font: { family: "Outfit", size: 11 } }
+          ticks: { color: getTextColor(0.75), font: { family: "Outfit", size: 11, weight: 600 } }
         },
         yAccuracy: {
           type: "linear",
           position: "left",
           min: 60,
           max: 100,
-          title: { display: true, text: "Accuracy (%)", color: getTextColor(0.7), font: { family: "Outfit" } },
-          ticks: { color: getTextColor(0.6) },
+          title: { display: true, text: "Accuracy (%)", color: getTextColor(0.8), font: { family: "Outfit", weight: 600 } },
+          ticks: { color: getTextColor(0.7) },
           grid: { color: getGridColor() }
         },
         yLatency: {
@@ -341,7 +350,7 @@ function drawComparisonChart(branches) {
           position: "right",
           min: 0,
           max: 320,
-          title: { display: true, text: "Latency (ms)", color: "#ef4444", font: { family: "Outfit" } },
+          title: { display: true, text: "Latency (ms)", color: "#ef4444", font: { family: "Outfit", weight: 600 } },
           ticks: { color: "#ef4444" },
           grid: { display: false }
         }
@@ -855,10 +864,30 @@ function getGridColor() {
 }
 
 function refreshAllCharts() {
-  if (comparisonChartInstance) comparisonChartInstance.update();
-  if (predictionDonutInstance) predictionDonutInstance.update();
-  if (predictionTrendsInstance) predictionTrendsInstance.update();
-  if (batchDonutInstance) batchDonutInstance.update();
+  if (comparisonChartInstance) {
+    comparisonChartInstance.options.plugins.legend.labels.color = getTextColor(0.85);
+    comparisonChartInstance.options.scales.x.ticks.color = getTextColor(0.75);
+    comparisonChartInstance.options.scales.yAccuracy.title.color = getTextColor(0.8);
+    comparisonChartInstance.options.scales.yAccuracy.ticks.color = getTextColor(0.7);
+    comparisonChartInstance.options.scales.yAccuracy.grid.color = getGridColor();
+    comparisonChartInstance.options.scales.yLatency.title.color = "#ef4444";
+    comparisonChartInstance.options.scales.yLatency.ticks.color = "#ef4444";
+    comparisonChartInstance.update();
+  }
+  if (predictionDonutInstance) {
+    predictionDonutInstance.options.plugins.legend.labels.color = getTextColor(0.85);
+    predictionDonutInstance.update();
+  }
+  if (predictionTrendsInstance) {
+    predictionTrendsInstance.options.scales.x.ticks.color = getTextColor(0.75);
+    predictionTrendsInstance.options.scales.y.ticks.color = getTextColor(0.7);
+    predictionTrendsInstance.options.scales.y.grid.color = getGridColor();
+    predictionTrendsInstance.update();
+  }
+  if (batchDonutInstance) {
+    batchDonutInstance.options.plugins.legend.labels.color = getTextColor(0.85);
+    batchDonutInstance.update();
+  }
 }
 
 function formatTimestamp(iso) {
