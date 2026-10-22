@@ -16,7 +16,7 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import config
-from app.services.model_loader import load_models, unload_models
+from app.services import model_loader
 
 # ---------------------------------------------------------------------------
 # Logging
@@ -39,12 +39,12 @@ async def lifespan(app: FastAPI):
     log.info("  EmoSense AI — Starting up")
     log.info("=" * 60)
     try:
-        load_models()
+        model_loader.load_models()
     except Exception as exc:
         log.critical("Failed to initialize models during startup: %s", exc, exc_info=True)
     yield
     log.info("EmoSense AI shutting down...")
-    unload_models()
+    model_loader.unload_models()
 
 
 # ---------------------------------------------------------------------------
