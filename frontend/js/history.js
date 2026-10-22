@@ -5,7 +5,7 @@
  * prediction history sidebar.
  */
 
-import { EMOTION_CONFIG, HISTORY_KEY, MAX_HISTORY } from "./config.js";
+import { EMOTION_CONFIG, HISTORY_KEY, SESSION_KEY, MAX_HISTORY } from "./config.js";
 import { escapeHtml, updateCounter, hideError, textInput, historyCount, historyEmpty, historyList } from "./ui.js";
 
 // ─── State ────────────────────────────────────────────────────────────
@@ -24,12 +24,24 @@ export function loadHistory() {
 }
 
 export function addToHistory(item) {
-  history.unshift({
+  const record = {
     ...item,
+    id: `pred_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
     timestamp: new Date().toISOString(),
-  });
+  };
+
+  // Persistent storage (localStorage)
+  history.unshift(record);
   if (history.length > MAX_HISTORY) history.pop();
   localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+
+  // Current session storage (sessionStorage)
+  try {
+    const sessionList = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "[]");
+    sessionList.unshift(record);
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(sessionList));
+  } catch (_) {}
+
   renderHistory();
 }
 

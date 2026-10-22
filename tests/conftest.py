@@ -119,6 +119,8 @@ def mock_models(monkeypatch):
     monkeypatch.setattr(model_loader, "_models", registry)
     monkeypatch.setattr(model_loader, "_state", model_loader.ModelState.READY)
     monkeypatch.setattr(model_loader, "_state_error", None)
+    monkeypatch.setattr(model_loader, "load_models", lambda: None)
+    monkeypatch.setattr(model_loader, "unload_models", lambda: None)
     return registry
 
 

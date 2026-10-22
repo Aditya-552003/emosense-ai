@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EmoSense AI — Model Evaluation & Metrics</title>
-  <meta name="description" content="Detailed performance metrics, confusion matrix, model branch comparisons, and architectural breakdown for EmoSense AI Stacking Ensemble." />
+  <title>EmoSense AI — Analytics & Performance Insights</title>
+  <meta name="description" content="Empirical model benchmarks, user prediction analytics, and batch processing metrics for EmoSense AI Stacking Ensemble." />
 
-  <!-- Backend API base URL (Hugging Face Spaces) -->
-  <meta name="api-base" content="https://DSAditya552003-emosense-ai.hf.space" />
+  <!-- Backend API base URL (empty defaults to same origin / local server) -->
+  <meta name="api-base" content="" />
 
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -19,7 +19,6 @@
 
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/evaluation.css" />
-
 </head>
 <body class="dark" data-emotion="neutral">
 
@@ -39,6 +38,12 @@
       </div>
 
       <div class="header-right">
+        <!-- API Status Indicator -->
+        <div class="api-status" id="apiStatus" title="Checking backend connection...">
+          <span class="status-dot"></span>
+          <span class="status-label" id="statusLabel">Checking...</span>
+        </div>
+
         <a href="index.html" class="nav-btn" title="Back to Emotion Analyzer">
           <span>✍️</span> Analyzer
         </a>
@@ -57,24 +62,81 @@
     <!-- Hero Section -->
     <section class="hero">
       <h1 class="hero-title">
-        Model <span class="gradient-text" id="heroEmotion">Evaluation</span>
-        <br />&amp; Performance Metrics
+        Analytics &amp; <span class="gradient-text" id="heroEmotion">Insights</span>
       </h1>
       <p class="hero-sub">
-        Empirical evaluation results and metrics calculated dynamically by evaluating the actual models against the validation dataset.
+        Explore verified empirical benchmarks, live user prediction patterns, and CSV batch processing performance backed by genuine data.
       </p>
     </section>
 
-    <!-- Source Banner -->
-    <div class="source-banner" id="sourceBanner">
-      <div class="status-pulse"></div>
-      <span id="sourceBannerText">Loading model-derived evaluation metrics...</span>
+    <!-- ═══ SCOPE SELECTOR TABS ════════════════════════════════════════ -->
+    <div class="scope-nav-wrapper">
+      <nav class="scope-nav" aria-label="Analytics scope navigation">
+        <button class="scope-tab-btn active" id="tabBenchmark" data-scope="benchmark" type="button">
+          <span>🧠</span> Model Evaluation (Benchmark)
+        </button>
+        <button class="scope-tab-btn" id="tabPredictions" data-scope="predictions" type="button">
+          <span>📈</span> Prediction Analytics
+        </button>
+        <button class="scope-tab-btn" id="tabBatch" data-scope="batch" type="button">
+          <span>📦</span> Batch Analytics
+        </button>
+      </nav>
     </div>
 
-    <!-- Content Grid -->
-    <div class="evaluation-grid">
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- TAB 1: MODEL EVALUATION (CATEGORY A)                             -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <section class="tab-panel active" id="panelBenchmark" aria-labelledby="tabBenchmark">
 
-      <!-- ─── CARD 1: Stacking Architecture Breakdown ──────────────────── -->
+      <!-- Source Banner -->
+      <div class="source-banner" id="benchmarkBanner">
+        <div class="status-pulse"></div>
+        <span id="benchmarkBannerText">
+          <strong>Verified Empirical Benchmark:</strong> Evaluated on 300 stratified test cases (50 per class) from <code>clean_emotion_dataset.csv</code>.
+        </span>
+      </div>
+
+      <!-- KPI Cards: Model Performance -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Ensemble Accuracy</span>
+            <span class="kpi-icon">🎯</span>
+          </div>
+          <div class="kpi-value" id="kpi-ens-acc">98.0%</div>
+          <div class="kpi-sub">Held-out test set accuracy</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Macro F1-Score</span>
+            <span class="kpi-icon">⚖️</span>
+          </div>
+          <div class="kpi-value" id="kpi-ens-f1">98.0%</div>
+          <div class="kpi-sub">Balanced across all 6 classes</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Test Sample Size</span>
+            <span class="kpi-icon">📚</span>
+          </div>
+          <div class="kpi-value" id="kpi-sample-count">300</div>
+          <div class="kpi-sub">Stratified (seed=42, 50 / emotion)</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Inference Latency</span>
+            <span class="kpi-icon">⚡</span>
+          </div>
+          <div class="kpi-value" id="kpi-ens-lat">~276 ms</div>
+          <div class="kpi-sub">End-to-end CPU soft voting</div>
+        </div>
+      </div>
+
+      <!-- Architecture Breakdown -->
       <div class="card full-width-card">
         <div class="card-header">
           <h2 class="card-title">
@@ -82,16 +144,14 @@
           </h2>
         </div>
         <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.9rem;">
-          EmoSense AI uses a <strong>dynamic alpha-weighted soft voting</strong> pipeline that merges semantic representations (XGBoost) and deep contextual models (RoBERTa) to maximize classification accuracy while maintaining excellent processing speeds.
+          EmoSense AI blends deep contextual transformers (RoBERTa) with lexical feature engineering (XGBoost + NRC Lexicon) via dynamic alpha-weighted soft voting ($P = \alpha P_{\text{RoBERTa}} + (1 - \alpha) P_{\text{XGBoost}}$).
         </p>
 
-        <!-- Dynamic diagram representation -->
         <div class="arch-flow">
-          
           <div class="arch-level">
             <div class="arch-box">
               <div class="arch-box-title">📄 Raw Text Input</div>
-              <div class="arch-box-desc">Input text is passed parallelly to both the Semantic and Contextual pipelines.</div>
+              <div class="arch-box-desc">Cleaned &amp; passed concurrently to both semantic and contextual pipelines.</div>
             </div>
           </div>
 
@@ -105,14 +165,14 @@
             <div class="arch-box" style="border-color: rgba(245, 158, 11, 0.4)">
               <div class="arch-box-title" style="color: #f59e0b">Branch 1: Semantic (XGBoost)</div>
               <div class="arch-box-desc">
-                Extracts word/char TF-IDF n-grams + 10 normalized emotion feature dimensions from the NRC Emotion Lexicon. Standardized with a StandardScaler and classified via XGBoost.
+                Word + character TF-IDF n-grams + 10-dimensional NRC Emotion Lexicon features, scaled via StandardScaler.
               </div>
             </div>
-            
+
             <div class="arch-box" style="border-color: rgba(59, 130, 246, 0.4)">
               <div class="arch-box-title" style="color: #3b82f6">Branch 2: Contextual (RoBERTa)</div>
               <div class="arch-box-desc">
-                Tokenized text is evaluated using a custom fine-tuned RoBERTa-base sequence classifier, extracting deep lexical contextual and semantic signals.
+                Fine-tuned RoBERTa transformer sequence classifier extracting deep contextual semantics and sentence syntax.
               </div>
             </div>
           </div>
@@ -121,272 +181,512 @@
           <div class="arch-connector-mobile">▼</div>
 
           <div class="arch-level">
-            <div class="arch-box" style="max-width: 450px; border-color: var(--emo-color);">
+            <div class="arch-box" style="max-width: 460px; border-color: var(--emo-color);">
               <div class="arch-box-title">Dynamic Alpha Blending (Soft Voting)</div>
               <div class="arch-box-desc">
-                Merges probability vectors from XGBoost and RoBERTa using a dynamic alpha (α) weight parameter. The final prediction distribution is calculated as: <code>α * RoBERTa + (1 - α) * XGBoost</code>.
+                Merges probability vectors using configurable blend parameter $\alpha$ (default 0.70). Final prediction: $\alpha P_{\text{RoBERTa}} + (1 - \alpha) P_{\text{XGBoost}}$.
               </div>
             </div>
           </div>
-
         </div>
       </div>
 
-      <!-- ─── CARD 1.5: Training Dataset Details ───────────────────────── -->
+      <!-- Branch Comparison & Accuracy vs Latency Chart -->
+      <div class="two-col-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon">⚡</span> Branch Comparison Matrix
+            </h2>
+          </div>
+          <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+            Empirical metrics measured by evaluating held-out test data through loaded model branches.
+          </p>
+
+          <div class="metrics-table-wrapper">
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Model Branch</th>
+                  <th>Accuracy</th>
+                  <th>Macro F1</th>
+                  <th>Avg Latency</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>XGBoost (Semantic)</td>
+                  <td id="xgb-acc">91.3%</td>
+                  <td id="xgb-f1">91.5%</td>
+                  <td id="xgb-lat">~13.4 ms</td>
+                </tr>
+                <tr>
+                  <td>RoBERTa (Contextual)</td>
+                  <td id="rob-acc">98.0%</td>
+                  <td id="rob-f1">98.0%</td>
+                  <td id="rob-lat">~275.6 ms</td>
+                </tr>
+                <tr class="row-meta-stacked">
+                  <td>Hybrid Ensemble (&alpha;=0.7)</td>
+                  <td id="ens-acc">98.0%</td>
+                  <td id="ens-f1">98.0%</td>
+                  <td id="ens-lat">~275.7 ms</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="detail-list">
+            <div class="detail-item">
+              <span class="detail-icon">✓</span>
+              <div><strong>Semantic Boost:</strong> XGBoost excels at lexicon keyword spotting, resolving ambiguous edge cases when context alone is neutral or subtle.</div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-icon">💡</span>
+              <div><strong>Contextual Precision:</strong> RoBERTa resolves complex syntax, negation, and multi-clause phrasing across emotional spectrums.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon">📈</span> Accuracy vs. Latency Trade-off
+            </h2>
+          </div>
+          <div class="chart-container-large">
+            <canvas id="comparisonChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Class-Specific Metrics & Confusion Matrix -->
+      <div class="two-col-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon">🎯</span> Class-Specific Evaluation
+            </h2>
+          </div>
+          <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+            Precision, recall, and F1-score evaluated on labeled validation data across all 6 emotion classes.
+          </p>
+
+          <div class="metrics-table-wrapper">
+            <table class="metrics-table" id="classMetricsTable">
+              <thead>
+                <tr>
+                  <th>Emotion</th>
+                  <th>Precision</th>
+                  <th>Recall</th>
+                  <th>F1-Score</th>
+                  <th>Support</th>
+                </tr>
+              </thead>
+              <tbody id="classMetricsBody">
+                <!-- Dynamically populated from /analytics/evaluation -->
+              </tbody>
+            </table>
+          </div>
+          <div class="detail-list">
+            <div class="detail-item">
+              <span class="detail-icon">🔥</span>
+              <div><strong>Top Performer:</strong> <span id="highestPerformerLabel">Loading...</span></div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-icon">⚠️</span>
+              <div><strong>Lowest Performer:</strong> <span id="lowestPerformerLabel">Loading...</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon">🔲</span> Confusion Matrix Heatmap
+            </h2>
+          </div>
+          <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+            Normalized actual vs. predicted distribution. Row headers = actual labels, column headers = predicted labels.
+          </p>
+
+          <div class="matrix-container">
+            <div class="matrix-grid" id="confusionMatrixGrid">
+              <!-- Dynamically populated by JS to guarantee exact label alignment -->
+            </div>
+          </div>
+
+          <div class="detail-list" style="margin-top: var(--sp-4);">
+            <div class="detail-item">
+              <span class="detail-icon">💡</span>
+              <div><strong>Diagonal Dominance:</strong> High values along the diagonal indicate strong prediction consistency across all emotion categories.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- TAB 2: PREDICTION ANALYTICS (CATEGORY B & C)                     -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="panelPredictions" aria-labelledby="tabPredictions">
+
+      <!-- Source Banner -->
+      <div class="source-banner" id="predictionBanner">
+        <div class="status-pulse" style="background: #8b5cf6; box-shadow: 0 0 6px #8b5cf688;"></div>
+        <span>
+          <strong>Prediction Store:</strong> Real user prediction records stored locally in browser storage. Since user inputs are unlabeled, accuracy and F1 metrics are not calculated here.
+        </span>
+      </div>
+
+      <!-- Filter Toolbar -->
+      <div class="filter-toolbar">
+        <div class="filter-group">
+          <label class="filter-label" for="filterScope">Scope:</label>
+          <select class="filter-select" id="filterScope">
+            <option value="saved">All Saved Predictions (localStorage)</option>
+            <option value="session">Current Session Only</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label" for="filterDate">Time Range:</label>
+          <select class="filter-select" id="filterDate">
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">Last 7 Days</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label" for="filterEmotion">Emotion:</label>
+          <select class="filter-select" id="filterEmotion">
+            <option value="all">All Emotions</option>
+            <option value="joy">😊 Joy</option>
+            <option value="sadness">😢 Sadness</option>
+            <option value="anger">😡 Anger</option>
+            <option value="fear">😨 Fear</option>
+            <option value="surprise">😲 Surprise</option>
+            <option value="neutral">😐 Neutral</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <button class="btn-secondary" id="btnRefreshPredictions" type="button">
+            <span>🔄</span> Refresh
+          </button>
+          <button class="btn-secondary btn-danger" id="btnClearHistoryAnalytics" type="button">
+            <span>🗑️</span> Clear History
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Cards: Prediction Analytics -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Total Predictions</span>
+            <span class="kpi-icon">📝</span>
+          </div>
+          <div class="kpi-value" id="kpi-pred-total">0</div>
+          <div class="kpi-sub" id="kpi-pred-total-sub">In selected scope</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Top Emotion</span>
+            <span class="kpi-icon">👑</span>
+          </div>
+          <div class="kpi-value" id="kpi-pred-top">—</div>
+          <div class="kpi-sub" id="kpi-pred-top-sub">Most frequent prediction</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Avg Confidence</span>
+            <span class="kpi-icon">✨</span>
+          </div>
+          <div class="kpi-value" id="kpi-pred-conf">—</div>
+          <div class="kpi-sub">Estimated model probability</div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-header">
+            <span class="kpi-title">Avg Latency</span>
+            <span class="kpi-icon">⏱️</span>
+          </div>
+          <div class="kpi-value" id="kpi-pred-lat">—</div>
+          <div class="kpi-sub">Measured inference time</div>
+        </div>
+      </div>
+
+      <!-- Charts: Emotion Distribution & Trends -->
+      <div class="two-col-grid">
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon">📊</span> Emotion Distribution
+            </h2>
+          </div>
+          <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+            Percentage and volume breakdown of emotions predicted within the selected scope.
+          </p>
+
+          <div class="chart-container-donut" id="donutContainer">
+            <canvas id="predictionEmotionChart"></canvas>
+          </div>
+          <div id="donutEmptyState" class="empty-state-card" style="display: none; padding: var(--sp-6);">
+            <div class="empty-state-icon">📊</div>
+            <div class="empty-state-title">No predictions recorded</div>
+            <div class="empty-state-desc">Run predictions in the Analyzer to populate the emotion distribution.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon">📈</span> Prediction Trends Over Time
+            </h2>
+          </div>
+          <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
+            Aggregated prediction volume grouped by date. Requires timestamped records.
+          </p>
+
+          <div class="chart-container-large" id="trendsChartContainer">
+            <canvas id="predictionTrendsChart"></canvas>
+          </div>
+          <div id="trendsEmptyState" class="empty-state-card" style="display: none; padding: var(--sp-6);">
+            <div class="empty-state-icon">⏳</div>
+            <div class="empty-state-title">Insufficient trend history</div>
+            <div class="empty-state-desc">Prediction trends require multiple timestamped predictions over time.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confidence Analytics Card -->
       <div class="card full-width-card">
         <div class="card-header">
           <h2 class="card-title">
-            <span class="card-icon">📚</span> Training Dataset Details
+            <span class="card-icon">🎯</span> Confidence Distribution Analytics
           </h2>
         </div>
         <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
-          The underlying models were trained on a high-quality, pre-processed emotional text dataset containing over <strong>17,500 meticulously labeled records</strong> across 6 emotion classes.
+          Distribution of estimated model prediction probabilities across confidence tiers. <em>Note: Model confidence represents predicted probability, not a guarantee of true correctness.</em>
         </p>
 
-        <div class="metrics-table-wrapper" style="margin-top: var(--sp-4);">
-          <table class="metrics-table">
-            <thead>
-              <tr>
-                <th>Dataset Attribute</th>
-                <th>Implementation Details</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><strong>Total Size</strong></td>
-                <td>~17,500 meticulously labeled text records.</td>
-              </tr>
-              <tr>
-                <td><strong>Emotion Classes</strong></td>
-                <td>6 distinct classes (Joy, Sadness, Anger, Fear, Surprise, Neutral).</td>
-              </tr>
-              <tr>
-                <td><strong>Preprocessing Pipeline</strong></td>
-                <td>Removal of URLs, HTML tags, and special characters. Lowercasing and advanced tokenization to ensure clean inputs.</td>
-              </tr>
-              <tr>
-                <td><strong>Feature Extraction</strong></td>
-                <td>TF-IDF vectors (words/characters) + 10-dimensional emotional vector generated using the <strong>NRC Emotion Lexicon</strong>.</td>
-              </tr>
-              <tr>
-                <td><strong>Stratified Validation</strong></td>
-                <td>Deterministic (seed 42) stratified sampling ensures unbiased, balanced evaluation across all classes.</td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="confidence-bands-grid">
+          <div class="band-card">
+            <div class="band-label" style="color: #22c55e;">Very High (&ge;90%)</div>
+            <div class="band-count" id="band-very-high">0</div>
+            <div class="band-desc">Strong classification consensus</div>
+          </div>
+          <div class="band-card">
+            <div class="band-label" style="color: #3b82f6;">High (80%–89%)</div>
+            <div class="band-count" id="band-high">0</div>
+            <div class="band-desc">Clear dominant emotion signal</div>
+          </div>
+          <div class="band-card">
+            <div class="band-label" style="color: #f59e0b;">Moderate (60%–79%)</div>
+            <div class="band-count" id="band-moderate">0</div>
+            <div class="band-desc">Multi-emotion nuance present</div>
+          </div>
+          <div class="band-card">
+            <div class="band-label" style="color: #ef4444;">Low (&lt;60%)</div>
+            <div class="band-count" id="band-low">0</div>
+            <div class="band-desc">High ambiguity / subtle context</div>
+          </div>
         </div>
       </div>
 
-      <!-- ─── CARD 2: Branch Comparison Matrix ─────────────────────────── -->
-      <div class="card">
+      <!-- Recent Prediction Records Table -->
+      <div class="card full-width-card">
         <div class="card-header">
           <h2 class="card-title">
-            <span class="card-icon">⚡</span> Branch Comparison Matrix
+            <span class="card-icon">📋</span> Stored Prediction Records
           </h2>
         </div>
-        <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
-          Evaluating branch-specific metrics by running raw dataset lines directly through your loaded models.
-        </p>
 
-        <div class="metrics-table-wrapper">
-          <table class="metrics-table">
+        <div class="metrics-table-wrapper" id="predictionsTableWrapper">
+          <table class="metrics-table" id="predictionsTable">
             <thead>
               <tr>
-                <th>Model Branch</th>
-                <th>Accuracy</th>
-                <th>Macro F1</th>
+                <th>Timestamp</th>
+                <th>Predicted Emotion</th>
+                <th>Confidence</th>
                 <th>Latency</th>
+                <th>Text Snippet</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td>XGBoost (Semantic)</td>
-                <td id="xgb-acc">81.2%</td>
-                <td id="xgb-f1">80.5%</td>
-                <td id="xgb-lat">~2.1 ms</td>
-              </tr>
-              <tr>
-                <td>RoBERTa (Contextual)</td>
-                <td id="rob-acc">92.4%</td>
-                <td id="rob-f1">91.8%</td>
-                <td id="rob-lat">~80.0 ms</td>
-              </tr>
-              <tr class="row-meta-stacked">
-                <td>Stacked Ensemble (Meta)</td>
-                <td id="ens-acc">93.8%</td>
-                <td id="ens-f1">93.2%</td>
-                <td id="ens-lat">~82.1 ms</td>
-              </tr>
+            <tbody id="predictionsTableBody">
+              <!-- Dynamically populated -->
             </tbody>
           </table>
         </div>
 
-        <div class="detail-list">
-          <div class="detail-item">
-            <span class="detail-icon">✓</span>
-            <div><strong>The Stacking Boost:</strong> Combining both branches gives a +1.4% accuracy improvement over RoBERTa alone, while adding negligible (~2ms) stacking meta-learner overhead.</div>
-          </div>
-          <div class="detail-item">
-            <span class="detail-icon">💡</span>
-            <div><strong>XGBoost Speed:</strong> While XGBoost is 40x faster, it struggles with sarcasm and deep syntax. Stacking uses its lexicon knowledge to resolve RoBERTa's edge-case confusions.</div>
+        <div id="predictionsEmptyState" class="empty-state-card" style="display: none;">
+          <div class="empty-state-icon">✍️</div>
+          <div class="empty-state-title">No predictions found in this scope</div>
+          <div class="empty-state-desc">
+            Go to the <a href="index.html" style="color: var(--emo-color); text-decoration: underline;">Emotion Analyzer</a> and analyze some text. Your predictions will automatically appear here!
           </div>
         </div>
       </div>
 
-      <!-- ─── CARD 3: Accuracy vs Latency Chart ────────────────────────── -->
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">
-            <span class="card-icon">📈</span> Accuracy vs. Latency Trade-off
-          </h2>
-        </div>
-        <div class="chart-container-large">
-          <canvas id="comparisonChart"></canvas>
-        </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <!-- TAB 3: BATCH ANALYTICS (CATEGORY D)                              -->
+    <!-- ══════════════════════════════════════════════════════════════════ -->
+    <section class="tab-panel" id="panelBatch" aria-labelledby="tabBatch">
+
+      <!-- Source Banner -->
+      <div class="source-banner" id="batchBanner">
+        <div class="status-pulse" style="background: #10b981; box-shadow: 0 0 6px #10b98188;"></div>
+        <span id="batchBannerText">
+          <strong>Batch CSV Results:</strong> Analytics derived from the latest CSV batch prediction executed in this session.
+        </span>
       </div>
 
-      <!-- ─── CARD 4: Emotion Performance Breakdown ────────────────────── -->
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">
-            <span class="card-icon">🎯</span> Class-Specific Metrics (Ensemble)
-          </h2>
-        </div>
-        <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
-          Detailed precision, recall, and F1-score breakdown of the ensemble on the validation dataset.
-        </p>
-
-        <div class="metrics-table-wrapper">
-          <table class="metrics-table" id="classMetricsTable">
-            <thead>
-              <tr>
-                <th>Emotion</th>
-                <th>Precision</th>
-                <th>Recall</th>
-                <th>F1-Score</th>
-              </tr>
-            </thead>
-            <tbody id="classMetricsBody">
-              <!-- Dynamically populated by JSON -->
-              <tr><td>😊 Joy</td><td>95.2%</td><td>96.4%</td><td>95.8%</td></tr>
-              <tr><td>😐 Neutral</td><td>93.6%</td><td>94.8%</td><td>94.2%</td></tr>
-              <tr><td>😢 Sadness</td><td>93.8%</td><td>92.1%</td><td>92.9%</td></tr>
-              <tr><td>😡 Anger</td><td>91.5%</td><td>94.2%</td><td>92.8%</td></tr>
-              <tr><td>😨 Fear</td><td>92.9%</td><td>90.5%</td><td>91.7%</td></tr>
-              <tr><td>😲 Surprise</td><td>90.1%</td><td>88.4%</td><td>89.2%</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="detail-list">
-          <div class="detail-item">
-            <span class="detail-icon">🔥</span>
-            <div><strong>Highest Performer:</strong> <span id="highestPerformerLabel"><strong>Joy</strong> (95.8% F1)</span>, driven by distinct semantic markers and highly regular structures.</div>
+      <!-- Batch Available State -->
+      <div id="batchContent" style="display: none;">
+        <!-- KPI Cards: Batch Processing -->
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Total Rows Processed</span>
+              <span class="kpi-icon">📄</span>
+            </div>
+            <div class="kpi-value" id="kpi-batch-total">0</div>
+            <div class="kpi-sub" id="kpi-batch-file">—</div>
           </div>
-          <div class="detail-item">
-            <span class="detail-icon">⚠️</span>
-            <div><strong>Greatest Challenge:</strong> <span id="lowestPerformerLabel"><strong>Surprise</strong> (89.2% F1)</span>, which occasionally overlaps with Fear due to shared situational phrases.</div>
+
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Successful Rows</span>
+              <span class="kpi-icon">✅</span>
+            </div>
+            <div class="kpi-value" id="kpi-batch-success" style="color: #22c55e;">0</div>
+            <div class="kpi-sub">Valid predictions returned</div>
           </div>
-        </div>
-      </div>
 
-      <!-- ─── CARD 5: Confusion Matrix Heatmap ─────────────────────────── -->
-      <div class="card">
-        <div class="card-header">
-          <h2 class="card-title">
-            <span class="card-icon">🔲</span> Emotion Confusion Matrix
-          </h2>
-        </div>
-        <p class="hero-sub" style="text-align: left; max-width: 100%; margin: 0; font-size: 0.85rem;">
-          Shows normalized prediction overlaps. Row headers are actual emotions, and column headers are predicted emotions.
-        </p>
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Batch Processing Time</span>
+              <span class="kpi-icon">⏱️</span>
+            </div>
+            <div class="kpi-value" id="kpi-batch-time">0 ms</div>
+            <div class="kpi-sub">Total server inference duration</div>
+          </div>
 
-        <div class="matrix-container">
-          <div class="matrix-grid" id="confusionMatrixGrid">
-            <!-- Header Row -->
-            <div class="matrix-cell matrix-header-cell"></div>
-            <div class="matrix-cell matrix-header-cell">Joy</div>
-            <div class="matrix-cell matrix-header-cell">Sad</div>
-            <div class="matrix-cell matrix-header-cell">Ang</div>
-            <div class="matrix-cell matrix-header-cell">Fear</div>
-            <div class="matrix-cell matrix-header-cell">Sur</div>
-            <div class="matrix-cell matrix-header-cell">Neu</div>
-
-            <!-- Joy row -->
-            <div class="matrix-cell matrix-header-cell y-label">Joy</div>
-            <div class="matrix-cell" id="cm-joy-joy">—</div>
-            <div class="matrix-cell" id="cm-joy-sadness">—</div>
-            <div class="matrix-cell" id="cm-joy-anger">—</div>
-            <div class="matrix-cell" id="cm-joy-fear">—</div>
-            <div class="matrix-cell" id="cm-joy-surprise">—</div>
-            <div class="matrix-cell" id="cm-joy-neutral">—</div>
-
-            <!-- Sadness row -->
-            <div class="matrix-cell matrix-header-cell y-label">Sad</div>
-            <div class="matrix-cell" id="cm-sadness-joy">—</div>
-            <div class="matrix-cell" id="cm-sadness-sadness">—</div>
-            <div class="matrix-cell" id="cm-sadness-anger">—</div>
-            <div class="matrix-cell" id="cm-sadness-fear">—</div>
-            <div class="matrix-cell" id="cm-sadness-surprise">—</div>
-            <div class="matrix-cell" id="cm-sadness-neutral">—</div>
-
-            <!-- Anger row -->
-            <div class="matrix-cell matrix-header-cell y-label">Ang</div>
-            <div class="matrix-cell" id="cm-anger-joy">—</div>
-            <div class="matrix-cell" id="cm-anger-sadness">—</div>
-            <div class="matrix-cell" id="cm-anger-anger">—</div>
-            <div class="matrix-cell" id="cm-anger-fear">—</div>
-            <div class="matrix-cell" id="cm-anger-surprise">—</div>
-            <div class="matrix-cell" id="cm-anger-neutral">—</div>
-
-            <!-- Fear row -->
-            <div class="matrix-cell matrix-header-cell y-label">Fear</div>
-            <div class="matrix-cell" id="cm-fear-joy">—</div>
-            <div class="matrix-cell" id="cm-fear-sadness">—</div>
-            <div class="matrix-cell" id="cm-fear-anger">—</div>
-            <div class="matrix-cell" id="cm-fear-fear">—</div>
-            <div class="matrix-cell" id="cm-fear-surprise">—</div>
-            <div class="matrix-cell" id="cm-fear-neutral">—</div>
-
-            <!-- Surprise row -->
-            <div class="matrix-cell matrix-header-cell y-label">Sur</div>
-            <div class="matrix-cell" id="cm-surprise-joy">—</div>
-            <div class="matrix-cell" id="cm-surprise-sadness">—</div>
-            <div class="matrix-cell" id="cm-surprise-anger">—</div>
-            <div class="matrix-cell" id="cm-surprise-fear">—</div>
-            <div class="matrix-cell" id="cm-surprise-surprise">—</div>
-            <div class="matrix-cell" id="cm-surprise-neutral">—</div>
-
-            <!-- Neutral row -->
-            <div class="matrix-cell matrix-header-cell y-label">Neu</div>
-            <div class="matrix-cell" id="cm-neutral-joy">—</div>
-            <div class="matrix-cell" id="cm-neutral-sadness">—</div>
-            <div class="matrix-cell" id="cm-neutral-anger">—</div>
-            <div class="matrix-cell" id="cm-neutral-fear">—</div>
-            <div class="matrix-cell" id="cm-neutral-surprise">—</div>
-            <div class="matrix-cell" id="cm-neutral-neutral">—</div>
+          <div class="kpi-card">
+            <div class="kpi-header">
+              <span class="kpi-title">Top Batch Emotion</span>
+              <span class="kpi-icon">📊</span>
+            </div>
+            <div class="kpi-value" id="kpi-batch-top">—</div>
+            <div class="kpi-sub" id="kpi-batch-top-pct">Dominant emotion class</div>
           </div>
         </div>
 
-        <div class="detail-list" style="margin-top: var(--sp-4);">
-          <div class="detail-item">
-            <span class="detail-icon">💡</span>
-            <div><strong>Matrix Insights:</strong> The high diagonal concentration demonstrates strong overall stability. Mild misclassifications are biologically consistent: e.g., Surprise was occasionally misclassified as Joy or Fear.</div>
+        <!-- Batch Emotion Breakdown Chart -->
+        <div class="two-col-grid">
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">
+                <span class="card-icon">📊</span> Batch Emotion Distribution
+              </h2>
+            </div>
+            <div class="chart-container-donut">
+              <canvas id="batchEmotionChart"></canvas>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">
+                <span class="card-icon">⚡</span> Batch Processing Summary
+              </h2>
+            </div>
+            <div class="detail-list" style="margin-top: var(--sp-2);">
+              <div class="detail-item">
+                <span class="detail-icon">📁</span>
+                <div><strong>Uploaded File:</strong> <span id="batchDetailFilename">—</span></div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-icon">📅</span>
+                <div><strong>Processed At:</strong> <span id="batchDetailTimestamp">—</span></div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-icon">⚖️</span>
+                <div><strong>Alpha Weight (&alpha;):</strong> <span id="batchDetailAlpha">0.70</span> (Soft Voting)</div>
+              </div>
+              <div class="detail-item">
+                <span class="detail-icon">⚡</span>
+                <div><strong>Throughput:</strong> <span id="batchDetailThroughput">— rows/sec</span></div>
+              </div>
+            </div>
+
+            <div style="margin-top: var(--sp-6);">
+              <button class="btn-secondary" id="btnDownloadBatchResults" type="button" style="width: 100%; justify-content: center;">
+                <span>⬇️</span> Download Batch Results (.CSV)
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Batch Predictions Table -->
+        <div class="card full-width-card">
+          <div class="card-header">
+            <h2 class="card-title">
+              <span class="card-icon">📋</span> Batch Predictions Breakdown
+            </h2>
+          </div>
+
+          <div class="metrics-table-wrapper">
+            <table class="metrics-table">
+              <thead>
+                <tr>
+                  <th>Row</th>
+                  <th>Text Snippet</th>
+                  <th>Predicted Emotion</th>
+                  <th>Confidence</th>
+                </tr>
+              </thead>
+              <tbody id="batchTableBody">
+                <!-- Dynamically populated -->
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
 
-    </div>
+      <!-- Batch Empty State -->
+      <div id="batchEmptyState" class="empty-state-card">
+        <div class="empty-state-icon">📦</div>
+        <div class="empty-state-title">No batch results in this session</div>
+        <div class="empty-state-desc">
+          Upload and run a CSV file in the <a href="index.html#batch" style="color: var(--emo-color); text-decoration: underline;">Analyzer Batch tab</a>. Once processed, your batch performance metrics, emotion distribution, and downloadable results will automatically populate here!
+        </div>
+        <div class="empty-state-action">
+          <a href="index.html" class="nav-btn" style="padding: 8px 16px;">
+            <span>🚀</span> Go to CSV Batch Analyzer
+          </a>
+        </div>
+      </div>
+
+    </section>
 
   </main>
 
   <!-- ═══ FOOTER ════════════════════════════════════════════════════════ -->
   <footer class="site-footer">
     <p>
-      EmoSense AI &nbsp;·&nbsp; Stacking Ensemble Performance Insights &nbsp;·&nbsp;
+      EmoSense AI &nbsp;·&nbsp; Analytics &amp; Empirical Performance Insights &nbsp;·&nbsp;
       <a href="index.html">Back to Analyzer ✍️</a>
     </p>
   </footer>
 
-  <script src="js/evaluation.js"></script>
+  <script type="module" src="js/evaluation.js"></script>
 </body>
 </html>

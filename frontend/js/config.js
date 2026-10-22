@@ -5,15 +5,45 @@
  * by any module without circular dependencies.
  *
  * API_BASE resolution order:
- *  1. <meta name="api-base" content="..."> tag in HTML (for overrides)
- *  2. Same origin (when frontend is served by the backend, e.g. local dev)
+ *  1. Same origin (when frontend is served by FastAPI on 8080 / 7860 / remote domain)
+ *  2. Local backend fallback (http://127.0.0.1:8080) for file:// or local static dev servers (e.g. port 5500)
+ *  3. Explicit <meta name="api-base" content="..."> override if provided
  */
 
-const metaApiBase = document.querySelector('meta[name="api-base"]')?.content;
-export const API_BASE = metaApiBase || window.location.origin;
+function resolveApiBase() {
+  const meta = document.querySelector('meta[name="api-base"]')?.content?.trim();
+
+  // If running via HTTP/HTTPS
+  if (window.location.protocol.startsWith("http")) {
+    const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+
+    // If served directly by backend (e.g. http://127.0.0.1:8080/ui/ or port 7860)
+    if (window.location.port === "8080" || window.location.port === "7860") {
+      return window.location.origin;
+    }
+
+    // If served by a local static dev server (e.g. Live Server on port 5500, 3000)
+    if (isLocal) {
+      return "http://127.0.0.1:8080";
+    }
+
+    // If hosted remotely on custom domain or Hugging Face Spaces
+    if (!meta || meta === "" || meta.includes("localhost") || meta.includes("127.0.0.1")) {
+      return window.location.origin;
+    }
+    return meta;
+  }
+
+  // Fallback for file:/// protocol
+  return meta && meta !== "" && !meta.includes("hf.space") ? meta : "http://127.0.0.1:8080";
+}
+
+export const API_BASE = resolveApiBase();
 export const MAX_CHARS   = 2000;
 export const HISTORY_KEY = "emosense_history";
-export const MAX_HISTORY = 20;
+export const BATCH_KEY   = "emosense_last_batch";
+export const SESSION_KEY = "emosense_session_predictions";
+export const MAX_HISTORY = 100;
 
 /**
  * Emotion configuration — colours, emojis, and display labels.

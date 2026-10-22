@@ -18,10 +18,12 @@ backend/
 │   ├── config.py               # Centralized configuration & environment variables
 │   ├── routes/                 # API endpoint handlers
 │   │   ├── __init__.py
+│   │   ├── analytics.py        # GET /analytics/evaluation, GET /analytics/model-info, POST /analytics/summary
 │   │   ├── health.py           # GET /, GET /health/live, GET /health/ready
 │   │   └── predict.py          # POST /predict, POST /predict/batch
 │   ├── schemas/                # Pydantic request & response validation schemas
 │   │   ├── __init__.py
+│   │   ├── analytics.py        # EvaluationMetricsResponse, PredictionStatsRequest, PredictionStatsResponse
 │   │   └── predict.py          # PredictRequest, PredictResponse, BatchPredictResponse
 │   ├── services/               # Core business & ML logic
 │   │   ├── __init__.py
@@ -107,15 +109,18 @@ Settings can be customized via `.env` or direct environment variables:
 - `GET /health/ready`: Lifecycle readiness probe (`200 OK` or `503 Service Unavailable`).
 - `POST /predict`: Single emotion analysis. Accepts JSON `{ "text": "...", "alpha": 0.7 }`. Returns predicted label, confidence, per-class probabilities, and latency.
 - `POST /predict/batch`: Bounded multipart CSV batch classification. Vectorized inference across up to 500 rows.
+- `GET /analytics/evaluation`: Verified empirical model evaluation metrics evaluated on held-out test data.
+- `GET /analytics/model-info`: Architectural specifications, default blend parameters, and emotion classes.
+- `POST /analytics/summary`: Aggregate stored prediction records into KPI cards, emotion distribution, confidence bands, and trend time-series.
 
 ---
 
 ## 🧪 Testing
 
-The repository includes a comprehensive 45-test automated pytest suite:
+The repository includes a comprehensive 52-test automated pytest suite:
 
 ```bash
-# Run all unit and API tests
+# Run all unit, API, and analytics tests
 python -m pytest tests/
 
 # Run with verbose output

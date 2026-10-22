@@ -38,7 +38,7 @@ PORT: int = int(os.getenv("PORT", "8080"))
 # Safe defaults: local UI and Gradio origins.
 _raw_cors = os.getenv(
     "CORS_ORIGINS",
-    "http://127.0.0.1:8080,http://localhost:8080,http://127.0.0.1:7860,http://localhost:7860",
+    "http://127.0.0.1:8080,http://localhost:8080,http://127.0.0.1:7860,http://localhost:7860,http://127.0.0.1:5500,http://localhost:5500,null",
 )
 CORS_ORIGINS: List[str] = [origin.strip() for origin in _raw_cors.split(",") if origin.strip()]
 
@@ -54,6 +54,7 @@ MAX_BATCH_ROWS: int = int(os.getenv("MAX_BATCH_ROWS", "500"))
 MAX_UPLOAD_SIZE_BYTES: int = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", str(5 * 1024 * 1024)))  # 5 MB
 MAX_CONCURRENT_INFERENCES: int = int(os.getenv("MAX_CONCURRENT_INFERENCES", "4"))
 DEFAULT_ALPHA: float = float(os.getenv("DEFAULT_ALPHA", "0.7"))
+EMOTION_CLASSES: List[str] = ["anger", "fear", "joy", "neutral", "sadness", "surprise"]
 
 # ---------------------------------------------------------------------------
 # Hugging Face Model Repository

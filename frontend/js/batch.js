@@ -5,7 +5,7 @@
  * simulation, results table rendering, and CSV download.
  */
 
-import { EMOTION_CONFIG } from "./config.js";
+import { EMOTION_CONFIG, BATCH_KEY } from "./config.js";
 import { showError, hideError, escapeHtml, alphaSlider } from "./ui.js";
 import { fetchBatchPrediction } from "./api.js";
 
@@ -178,6 +178,15 @@ function renderBatchResults(data) {
   batchResults.hidden = false;
   batchResultsCount.textContent = `${data.total_rows} rows`;
   batchTime.textContent = `⏱ ${data.batch_processing_time_ms} ms`;
+
+  // Persist latest batch run in sessionStorage for Insight Dashboard Batch Analytics
+  try {
+    sessionStorage.setItem(BATCH_KEY, JSON.stringify({
+      filename: uploadedFile ? uploadedFile.name : "batch.csv",
+      timestamp: new Date().toISOString(),
+      ...data,
+    }));
+  } catch (_) {}
 
   batchTableBody.innerHTML = "";
 
