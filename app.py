@@ -183,7 +183,9 @@ with gr.Blocks(
 # ── Mount Gradio interface at /gradio so REST API remains on / ────────────
 app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
 
-if __name__ == "__main__":
+# In Hugging Face Spaces (Gradio SDK), HF automatically launches the exported `app`
+# on port 7860. The manual uvicorn runner only executes when running standalone locally.
+if __name__ == "__main__" and "SPACE_ID" not in os.environ:
     import uvicorn
 
     port = int(os.environ.get("PORT", 7860))
