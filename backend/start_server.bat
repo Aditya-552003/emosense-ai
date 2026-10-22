@@ -19,4 +19,4 @@ echo  Press Ctrl+C to stop.
 echo.
 
 cd /d "%~dp0"
-python -m uvicorn app:create_app --factory --host 127.0.0.1 --port 8080
+python -m uvicorn app:create_app --factory --host 127.0.0.1 --port 8080 --reload

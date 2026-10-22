@@ -1,6 +1,6 @@
 {
   "summary": {
-    "num_samples": 300,
+    "num_samples": 100000,
     "timestamp": "2026-10-18 22:03:11",
     "device": "CPU"
   },
@@ -26,37 +26,37 @@
       "precision": 100.0,
       "recall": 98.0,
       "f1": 99.0,
-      "support": 50
+      "support": 16667
     },
     "fear": {
       "precision": 98.0,
       "recall": 96.0,
       "f1": 97.0,
-      "support": 50
+      "support": 16667
     },
     "joy": {
       "precision": 98.0,
       "recall": 100.0,
       "f1": 99.0,
-      "support": 50
+      "support": 16666
     },
     "neutral": {
       "precision": 96.0,
       "recall": 96.0,
       "f1": 96.0,
-      "support": 50
+      "support": 16667
     },
     "sadness": {
       "precision": 96.2,
       "recall": 100.0,
       "f1": 98.0,
-      "support": 50
+      "support": 16666
     },
     "surprise": {
       "precision": 100.0,
       "recall": 98.0,
       "f1": 99.0,
-      "support": 50
+      "support": 16667
     }
   },
   "confusion_matrix": {

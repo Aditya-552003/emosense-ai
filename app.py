@@ -12,13 +12,28 @@ import logging
 import os
 import sys
 
-# Ensure backend/ is at index 0 on sys.path
-_BACKEND_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "backend")
+# Ensure backend/ is on sys.path
+_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+_BACKEND_DIR = os.path.join(_PROJECT_ROOT, "backend")
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
+# Dynamically load backend/app package to prevent name collision with root app.py
+import importlib.util
+
+_backend_init = os.path.join(_BACKEND_DIR, "app", "__init__.py")
+_backend_spec = importlib.util.spec_from_file_location(
+    "app",
+    _backend_init,
+    submodule_search_locations=[os.path.join(_BACKEND_DIR, "app")],
+)
+_backend_mod = importlib.util.module_from_spec(_backend_spec)
+sys.modules["app"] = _backend_mod
+_backend_spec.loader.exec_module(_backend_mod)
+
+create_app = _backend_mod.create_app
+
 import gradio as gr
-from app import create_app  # noqa: E402 — FastAPI factory
 
 log = logging.getLogger("emosense.gradio")
 
