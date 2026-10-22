@@ -13,6 +13,9 @@
 | `GET` | `/health/ready` | Model readiness probe | `200`, `503` |
 | `POST` | `/predict` | Classify emotion in a single text string | `200`, `422`, `500`, `503` |
 | `POST` | `/predict/batch` | Batch emotion prediction from an uploaded CSV file | `200`, `400`, `413`, `503` |
+| `GET` | `/analytics/evaluation` | Empirical model evaluation metrics on held-out test data | `200` |
+| `GET` | `/analytics/model-info` | Model architecture details and supported emotion classes | `200` |
+| `POST` | `/analytics/summary` | Aggregate prediction records into KPI stats and trends | `200`, `422` |
 
 ---
 
@@ -188,7 +191,119 @@ Content-Type: multipart/form-data
 
 ---
 
-## 5. Emotion Classes & Encodings
+## 5. Analytics & Insights
+
+### `GET /analytics/evaluation`
+Retrieves empirical evaluation metrics calculated directly from the held-out validation dataset (300 stratified test cases from `clean_emotion_dataset.csv`).
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "summary": {
+    "num_samples": 300,
+    "timestamp": "2026-10-18 22:03:11",
+    "device": "CPU",
+    "dataset_name": "clean_emotion_dataset.csv",
+    "split_description": "Stratified held-out validation sample (50 per class, seed=42, 300 total samples)."
+  },
+  "branches": {
+    "xgb": { "accuracy": 91.3, "macro_f1": 91.5, "avg_latency_ms": 13.41 },
+    "roberta": { "accuracy": 98.0, "macro_f1": 98.0, "avg_latency_ms": 275.59 },
+    "ensemble": { "accuracy": 98.0, "macro_f1": 98.0, "avg_latency_ms": 275.72 }
+  },
+  "class_metrics": {
+    "anger": { "precision": 100.0, "recall": 98.0, "f1": 99.0, "support": 50 },
+    "fear": { "precision": 98.0, "recall": 96.0, "f1": 97.0, "support": 50 },
+    "joy": { "precision": 98.0, "recall": 100.0, "f1": 99.0, "support": 50 },
+    "neutral": { "precision": 96.0, "recall": 96.0, "f1": 96.0, "support": 50 },
+    "sadness": { "precision": 96.2, "recall": 100.0, "f1": 98.0, "support": 50 },
+    "surprise": { "precision": 100.0, "recall": 98.0, "f1": 99.0, "support": 50 }
+  },
+  "confusion_matrix": {
+    "labels": ["anger", "fear", "joy", "neutral", "sadness", "surprise"],
+    "matrix": [
+      [98.0, 0.0, 0.0, 2.0, 0.0, 0.0],
+      [0.0, 96.0, 0.0, 2.0, 2.0, 0.0],
+      [0.0, 0.0, 100.0, 0.0, 0.0, 0.0],
+      [0.0, 2.0, 0.0, 96.0, 2.0, 0.0],
+      [0.0, 0.0, 0.0, 0.0, 100.0, 0.0],
+      [0.0, 0.0, 2.0, 0.0, 0.0, 98.0]
+    ]
+  }
+}
+```
+
+### `GET /analytics/model-info`
+Returns architectural metadata, blend configurations, and standard emotion classes.
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "model_name": "EmoSense AI Hybrid Ensemble",
+  "branches": {
+    "roberta": "Fine-tuned roberta-base sequence classification (contextual)",
+    "xgboost": "XGBoost on word/char TF-IDF and 10 NRC Emotion Lexicon density features (semantic)",
+    "ensemble": "Dynamic alpha-weighted soft voting (alpha * RoBERTa + (1-alpha) * XGBoost)"
+  },
+  "default_alpha": 0.7,
+  "emotion_classes": ["anger", "fear", "joy", "neutral", "sadness", "surprise"]
+}
+```
+
+### `POST /analytics/summary`
+Calculates real aggregate KPI metrics, emotion distribution, confidence bands, and time-series trends from client prediction records.
+
+#### Request Body
+```json
+{
+  "records": [
+    {
+      "predicted_emotion": "joy",
+      "confidence": 0.95,
+      "processing_time_ms": 110.2,
+      "timestamp": "2026-10-19T10:00:00Z"
+    }
+  ],
+  "date_from": "2026-10-01T00:00:00Z",
+  "date_to": "2026-10-31T23:59:59Z",
+  "emotion_filter": "all"
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "success": true,
+  "total_predictions": 1,
+  "top_emotion": "joy",
+  "top_emotion_pct": 100.0,
+  "emotion_counts": {
+    "anger": 0, "fear": 0, "joy": 1, "neutral": 0, "sadness": 0, "surprise": 0
+  },
+  "emotion_percentages": {
+    "anger": 0.0, "fear": 0.0, "joy": 100.0, "neutral": 0.0, "sadness": 0.0, "surprise": 0.0
+  },
+  "avg_confidence": 0.95,
+  "avg_latency_ms": 110.2,
+  "confidence_bands": {
+    "very_high": 1,
+    "high": 0,
+    "moderate": 0,
+    "low": 0
+  },
+  "low_confidence_count": 0,
+  "time_series": [
+    { "bucket": "2026-10-19", "count": 1, "dominant_emotion": "joy" }
+  ],
+  "scope_description": "Aggregated 1 predictions across 6 emotion categories."
+}
+```
+
+---
+
+## 6. Emotion Classes & Encodings
 
 | Index | Class | Emoji | Hex / HSL Color | Description |
 |---|---|---|---|---|

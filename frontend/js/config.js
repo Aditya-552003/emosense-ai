@@ -41,7 +41,9 @@ function resolveApiBase() {
 export const API_BASE = resolveApiBase();
 export const MAX_CHARS   = 2000;
 export const HISTORY_KEY = "emosense_history";
-export const MAX_HISTORY = 20;
+export const BATCH_KEY   = "emosense_last_batch";
+export const SESSION_KEY = "emosense_session_predictions";
+export const MAX_HISTORY = 100;
 
 /**
  * Emotion configuration — colours, emojis, and display labels.

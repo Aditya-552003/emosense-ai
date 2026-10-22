@@ -54,6 +54,7 @@ MAX_BATCH_ROWS: int = int(os.getenv("MAX_BATCH_ROWS", "500"))
 MAX_UPLOAD_SIZE_BYTES: int = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", str(5 * 1024 * 1024)))  # 5 MB
 MAX_CONCURRENT_INFERENCES: int = int(os.getenv("MAX_CONCURRENT_INFERENCES", "4"))
 DEFAULT_ALPHA: float = float(os.getenv("DEFAULT_ALPHA", "0.7"))
+EMOTION_CLASSES: List[str] = ["anger", "fear", "joy", "neutral", "sadness", "surprise"]
 
 # ---------------------------------------------------------------------------
 # Hugging Face Model Repository

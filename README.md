@@ -59,7 +59,7 @@ emotion_model/
 │   ├── index.html              # Interactive single & batch analyzer
 │   ├── evaluation.html         # Live empirical performance dashboard
 │   └── metrics.json            # Empirical model metrics
-├── tests/                      # Automated pytest suite (45 tests)
+├── tests/                      # Automated pytest suite (52 tests)
 │   ├── conftest.py             # Fixtures and mock components
 │   ├── test_validation.py      # Pydantic schema validation tests
 │   ├── test_preprocessing.py   # Preprocessing & NRC extraction unit tests
@@ -68,6 +68,7 @@ emotion_model/
 │   ├── test_api_health.py      # Health, liveness, & readiness probes
 │   ├── test_api_predict.py     # Single prediction API & CORS tests
 │   ├── test_api_batch.py       # CSV upload bounds, parsing, & row limits
+│   ├── test_api_analytics.py   # Analytics aggregation & evaluation API tests
 │   └── test_real_models.py     # Real artifact smoke tests
 ├── docs/                       # Technical documentation
 │   ├── CODE_AUDIT.md           # Full audit report & baseline findings

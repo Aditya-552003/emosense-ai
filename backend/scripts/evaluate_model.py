@@ -133,7 +133,10 @@ def main():
         final_probs = final_probs / np.sum(final_probs)
         pred_ens_idx = int(np.argmax(final_probs))
         pred_ens_label = classes[pred_ens_idx]
-        latencies_ensemble.append((time.perf_counter() - t0) * 1000)
+        blend_ms = (time.perf_counter() - t0) * 1000
+        # Total ensemble latency is the contextual + semantic pipeline + soft-voting blend
+        total_ens_lat = latencies_xgb[-1] + latencies_roberta[-1] + blend_ms
+        latencies_ensemble.append(total_ens_lat)
         pred_ensemble.append(pred_ens_label)
 
     # Calculate Branch Performance
