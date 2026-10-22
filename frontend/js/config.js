@@ -12,30 +12,39 @@
 
 function resolveApiBase() {
   const meta = document.querySelector('meta[name="api-base"]')?.content?.trim();
+  
+  // Optional URL param override (e.g. ?api=https://my-space.hf.space) or localStorage override
+  let queryOverride = null;
+  let storedOverride = null;
+  try {
+    queryOverride = new URLSearchParams(window.location.search).get("api")?.trim();
+    if (queryOverride) localStorage.setItem("emosense_api_base", queryOverride);
+    storedOverride = localStorage.getItem("emosense_api_base")?.trim();
+  } catch (_) { /* ignore cross-origin/sandbox storage errors */ }
+
+  const customBase = queryOverride || storedOverride || (meta && meta !== "" ? meta : null);
 
   // If running via HTTP/HTTPS
   if (window.location.protocol.startsWith("http")) {
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
+    const isHfSpace = window.location.hostname.endsWith("hf.space");
 
-    // If served directly by backend (e.g. http://127.0.0.1:8080/ui/ or port 7860)
-    if (window.location.port === "8080" || window.location.port === "7860") {
-      return window.location.origin;
+    // If served directly by backend on HF Space or local uvicorn (port 8080 / 7860)
+    if (isHfSpace || window.location.port === "8080" || window.location.port === "7860") {
+      return customBase || window.location.origin;
     }
 
     // If served by a local static dev server (e.g. Live Server on port 5500, 3000)
     if (isLocal) {
-      return "http://127.0.0.1:8080";
+      return customBase || "http://127.0.0.1:8080";
     }
 
-    // If hosted remotely on custom domain or Hugging Face Spaces
-    if (!meta || meta === "" || meta.includes("localhost") || meta.includes("127.0.0.1")) {
-      return window.location.origin;
-    }
-    return meta;
+    // If hosted remotely on Vercel / Netlify / custom static CDN
+    return customBase || window.location.origin;
   }
 
   // Fallback for file:/// protocol
-  return meta && meta !== "" && !meta.includes("hf.space") ? meta : "http://127.0.0.1:8080";
+  return customBase || "http://127.0.0.1:8080";
 }
 
 export const API_BASE = resolveApiBase();
