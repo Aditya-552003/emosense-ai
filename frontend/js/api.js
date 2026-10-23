@@ -14,14 +14,19 @@ import { API_BASE } from "./config.js";
  * @returns {Promise<boolean>}
  */
 export async function checkApiStatus(apiStatus, statusLabel) {
-  try {
-    const res = await fetch(`${API_BASE}/`, { signal: AbortSignal.timeout(5000) });
-    if (res.ok) {
-      apiStatus.className = "api-status online";
-      statusLabel.textContent = "API Online";
-      return true;
-    }
-  } catch (_) { /* fall through */ }
+  for (const path of ["/health/ready", "/api/health/ready", "/"]) {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, { signal: AbortSignal.timeout(4000) });
+      if (res.ok) {
+        const ct = res.headers.get("content-type") || "";
+        if (ct.includes("application/json") || path.includes("health")) {
+          apiStatus.className = "api-status online";
+          statusLabel.textContent = "API Online";
+          return true;
+        }
+      }
+    } catch (_) { /* continue */ }
+  }
 
   apiStatus.className = "api-status offline";
   statusLabel.textContent = "API Offline";
@@ -35,12 +40,24 @@ export async function checkApiStatus(apiStatus, statusLabel) {
  * @returns {Promise<Object>} The prediction result.
  */
 export async function fetchPrediction(text, alpha = 0.7) {
-  const res = await fetch(`${API_BASE}/predict`, {
+  let url = `${API_BASE}/predict`;
+  let res = await fetch(url, {
     method:  "POST",
     headers: { "Content-Type": "application/json" },
     body:    JSON.stringify({ text, alpha }),
     signal:  AbortSignal.timeout(30_000),
   });
+
+  // Seamless fallback if backend routes are mounted under /api
+  if (res.status === 404 && !API_BASE.endsWith("/api")) {
+    url = `${API_BASE}/api/predict`;
+    res = await fetch(url, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ text, alpha }),
+      signal:  AbortSignal.timeout(30_000),
+    });
+  }
 
   if (!res.ok) {
     let detail = `Server error ${res.status}`;
@@ -65,11 +82,22 @@ export async function fetchBatchPrediction(file, alpha = 0.7) {
   formData.append("file", file);
   formData.append("alpha", alpha);
 
-  const res = await fetch(`${API_BASE}/predict/batch`, {
+  let url = `${API_BASE}/predict/batch`;
+  let res = await fetch(url, {
     method: "POST",
     body:   formData,
     signal: AbortSignal.timeout(120_000),  // 2 min timeout for batch
   });
+
+  // Seamless fallback if backend routes are mounted under /api
+  if (res.status === 404 && !API_BASE.endsWith("/api")) {
+    url = `${API_BASE}/api/predict/batch`;
+    res = await fetch(url, {
+      method: "POST",
+      body:   formData,
+      signal: AbortSignal.timeout(120_000),
+    });
+  }
 
   if (!res.ok) {
     let detail = `Server error ${res.status}`;
@@ -82,3 +110,4 @@ export async function fetchBatchPrediction(file, alpha = 0.7) {
 
   return res.json();
 }
+

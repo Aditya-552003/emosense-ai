@@ -204,6 +204,9 @@ with gr.Blocks(
     )
 
 
+create_app = _backend_mod.create_app
+fastapi_app = create_app()
+
 # ── Attach REST API & Middleware directly to Gradio's underlying FastAPI app ──
 demo.app.add_middleware(
     CORSMiddleware,
@@ -216,6 +219,9 @@ demo.app.add_middleware(
 demo.app.include_router(health_router)
 demo.app.include_router(predict_router)
 demo.app.include_router(analytics_router)
+
+# Mount FastAPI app at /api for dedicated REST routing
+demo.app.mount("/api", fastapi_app)
 
 # Mount frontend static UI at /ui
 frontend_dir = str(config.FRONTEND_DIR)
