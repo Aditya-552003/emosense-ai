@@ -54,21 +54,6 @@ def run_inference(
     return results[0]
 
 
-try:
-    import spaces
-except ImportError:
-    class _MockSpaces:
-        @staticmethod
-        def GPU(fn=None, **kwargs):
-            if fn is not None and callable(fn):
-                return fn
-            def decorator(func):
-                return func
-            return decorator
-    spaces = _MockSpaces()
-
-
-@spaces.GPU
 def run_batch_inference(
     texts: List[str],
     alpha: float = 0.7,
@@ -112,10 +97,17 @@ def run_batch_inference(
     x_sem = hstack([x_w, x_c, x_n])
     sem_probs = models["xgb"].predict_proba(x_sem)  # (n_samples, 6)
 
-    # ── 2. Contextual branch (RoBERTa) ───────────────────────────────────────
-    device = models["device"]
+    device = "cuda" if torch.cuda.is_available() else models.get("device", "cpu")
     tokenizer = models["tokenizer"]
     roberta = models["roberta"]
+    if hasattr(roberta, "parameters"):
+        try:
+            param_dev = next(roberta.parameters()).device.type
+            if param_dev != device:
+                roberta.to(device)
+        except Exception as _dev_err:
+            log.warning("Could not set RoBERTa device to %s: %s", device, _dev_err)
+            device = "cpu"
 
     ctx_probs_list = []
     with torch.inference_mode():
