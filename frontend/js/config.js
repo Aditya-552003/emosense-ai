@@ -36,7 +36,7 @@ function resolveApiBase() {
 
     // If served by a local static dev server (e.g. Live Server on port 5500, 3000)
     if (isLocal) {
-      return customBase || "http://127.0.0.1:8080";
+      return queryOverride || storedOverride || "http://127.0.0.1:8080";
     }
 
     // If hosted remotely on Vercel / Netlify / custom static CDN
