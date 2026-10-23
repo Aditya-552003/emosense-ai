@@ -8,6 +8,19 @@ and the JSON API coexist on the same port.
 HF Spaces (Gradio SDK) looks for this file at the project root.
 """
 
+try:
+    import spaces
+except ImportError:
+    class _MockSpaces:
+        @staticmethod
+        def GPU(fn=None, **kwargs):
+            if fn is not None and callable(fn):
+                return fn
+            def decorator(func):
+                return func
+            return decorator
+    spaces = _MockSpaces()
+
 import logging
 import os
 import sys
@@ -59,19 +72,6 @@ EMOTION_COLORS = {
     "surprise": "#10B981",
 }
 
-
-try:
-    import spaces
-except ImportError:
-    class _MockSpaces:
-        @staticmethod
-        def GPU(fn=None, **kwargs):
-            if fn is not None and callable(fn):
-                return fn
-            def decorator(func):
-                return func
-            return decorator
-    spaces = _MockSpaces()
 
 
 @spaces.GPU
@@ -196,6 +196,9 @@ with gr.Blocks(
 
 
 os.environ["GRADIO_SSR_MODE"] = "False"
+
+# ── Enable Gradio queue for HF ZeroGPU / concurrent request support ───────
+demo.queue()
 
 # ── Mount Gradio interface at /gradio so REST API remains on / ────────────
 app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio", ssr_mode=False)
