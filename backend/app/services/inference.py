@@ -56,17 +56,19 @@ def run_inference(
 
 try:
     import spaces
-    gpu_decorator = spaces.GPU
-except Exception:
-    def gpu_decorator(fn=None, **kwargs):
-        if fn is not None and callable(fn):
-            return fn
-        def decorator(func):
-            return func
-        return decorator
+except ImportError:
+    class _MockSpaces:
+        @staticmethod
+        def GPU(fn=None, **kwargs):
+            if fn is not None and callable(fn):
+                return fn
+            def decorator(func):
+                return func
+            return decorator
+    spaces = _MockSpaces()
 
 
-@gpu_decorator
+@spaces.GPU
 def run_batch_inference(
     texts: List[str],
     alpha: float = 0.7,

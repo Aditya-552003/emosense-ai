@@ -62,17 +62,19 @@ EMOTION_COLORS = {
 
 try:
     import spaces
-    gpu_decorator = spaces.GPU
-except Exception:
-    def gpu_decorator(fn=None, **kwargs):
-        if fn is not None and callable(fn):
-            return fn
-        def decorator(func):
-            return func
-        return decorator
+except ImportError:
+    class _MockSpaces:
+        @staticmethod
+        def GPU(fn=None, **kwargs):
+            if fn is not None and callable(fn):
+                return fn
+            def decorator(func):
+                return func
+            return decorator
+    spaces = _MockSpaces()
 
 
-@gpu_decorator
+@spaces.GPU
 def predict_emotion(text: str) -> tuple:
     """Run ensemble inference with length validation and safe exception handling."""
     if not text or not text.strip():
