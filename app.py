@@ -180,8 +180,12 @@ with gr.Blocks(
     )
 
 
+os.environ["GRADIO_SSR_MODE"] = "False"
+
 # ── Mount Gradio interface at /gradio so REST API remains on / ────────────
-app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio")
+app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio", ssr_mode=False)
+demo.has_launched = True
+demo.is_running = True
 
 if __name__ == "__main__":
     import uvicorn
