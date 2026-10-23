@@ -54,6 +54,19 @@ def run_inference(
     return results[0]
 
 
+try:
+    import spaces
+    gpu_decorator = spaces.GPU
+except Exception:
+    def gpu_decorator(fn=None, **kwargs):
+        if fn is not None and callable(fn):
+            return fn
+        def decorator(func):
+            return func
+        return decorator
+
+
+@gpu_decorator
 def run_batch_inference(
     texts: List[str],
     alpha: float = 0.7,
