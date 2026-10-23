@@ -2,7 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "outputDirectory": "frontend",
-  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/evaluation", "destination": "/evaluation.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
