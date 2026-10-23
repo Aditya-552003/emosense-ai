@@ -220,8 +220,9 @@ demo.app.include_router(health_router)
 demo.app.include_router(predict_router)
 demo.app.include_router(analytics_router)
 
-# Mount FastAPI app at /api for dedicated REST routing
+# Mount FastAPI app at /api and /gradio_api/api for dedicated REST routing
 demo.app.mount("/api", fastapi_app)
+demo.app.mount("/gradio_api/api", fastapi_app)
 
 # Mount frontend static UI at /ui
 frontend_dir = str(config.FRONTEND_DIR)

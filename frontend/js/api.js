@@ -14,7 +14,7 @@ import { API_BASE } from "./config.js";
  * @returns {Promise<boolean>}
  */
 export async function checkApiStatus(apiStatus, statusLabel) {
-  for (const path of ["/health/ready", "/api/health/ready", "/"]) {
+  for (const path of ["/gradio_api/api/health/ready", "/api/health/ready", "/health/ready", "/"]) {
     try {
       const res = await fetch(`${API_BASE}${path}`, { signal: AbortSignal.timeout(4000) });
       if (res.ok) {
@@ -48,15 +48,18 @@ export async function fetchPrediction(text, alpha = 0.7) {
     signal:  AbortSignal.timeout(30_000),
   });
 
-  // Seamless fallback if backend routes are mounted under /api
-  if (res.status === 404 && !API_BASE.endsWith("/api")) {
-    url = `${API_BASE}/api/predict`;
-    res = await fetch(url, {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ text, alpha }),
-      signal:  AbortSignal.timeout(30_000),
-    });
+  // Seamless fallback if backend routes are mounted under /gradio_api/api or /api
+  if (res.status === 404) {
+    for (const prefix of ["/gradio_api/api", "/api"]) {
+      url = `${API_BASE}${prefix}/predict`;
+      res = await fetch(url, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ text, alpha }),
+        signal:  AbortSignal.timeout(30_000),
+      });
+      if (res.ok) break;
+    }
   }
 
   if (!res.ok) {
@@ -89,14 +92,17 @@ export async function fetchBatchPrediction(file, alpha = 0.7) {
     signal: AbortSignal.timeout(120_000),  // 2 min timeout for batch
   });
 
-  // Seamless fallback if backend routes are mounted under /api
-  if (res.status === 404 && !API_BASE.endsWith("/api")) {
-    url = `${API_BASE}/api/predict/batch`;
-    res = await fetch(url, {
-      method: "POST",
-      body:   formData,
-      signal: AbortSignal.timeout(120_000),
-    });
+  // Seamless fallback if backend routes are mounted under /gradio_api/api or /api
+  if (res.status === 404) {
+    for (const prefix of ["/gradio_api/api", "/api"]) {
+      url = `${API_BASE}${prefix}/predict/batch`;
+      res = await fetch(url, {
+        method: "POST",
+        body:   formData,
+        signal: AbortSignal.timeout(120_000),
+      });
+      if (res.ok) break;
+    }
   }
 
   if (!res.ok) {
