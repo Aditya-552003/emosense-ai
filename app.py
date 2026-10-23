@@ -1,11 +1,10 @@
 """
-app.py — Hugging Face Spaces entry point.
+app.py — Hugging Face Spaces entry point for EmoSense AI.
 
-Mounts the full FastAPI backend (with all REST endpoints)
-inside a Gradio app using gr.mount_gradio_app, so BOTH the Gradio UI
-and the JSON API coexist on the same port.
-
-HF Spaces (Gradio SDK) looks for this file at the project root.
+Mounts all FastAPI REST API routes directly onto Gradio's underlying FastAPI
+application (demo.app) and runs demo.launch(), which satisfies Hugging Face's
+ZeroGPU startup scanner while serving the Gradio UI (/), static frontend (/ui),
+and REST API (/predict, /health/ready, /analytics) on the exact same port.
 """
 
 try:
@@ -44,14 +43,25 @@ _backend_mod = importlib.util.module_from_spec(_backend_spec)
 sys.modules["app"] = _backend_mod
 _backend_spec.loader.exec_module(_backend_mod)
 
-create_app = _backend_mod.create_app
-
+from app import config
+from app.routes.analytics import router as analytics_router
+from app.routes.health import router as health_router
+from app.routes.predict import router as predict_router
+from app.services import model_loader
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import gradio as gr
 
 log = logging.getLogger("emosense.gradio")
 
-# ── Create the FastAPI app (loads models via lifespan) ────────────────────
-fastapi_app = create_app()
+# ── Load ML models at startup ─────────────────────────────────────────────
+log.info("=" * 60)
+log.info("  EmoSense AI — Initializing Models")
+log.info("=" * 60)
+try:
+    model_loader.load_models()
+except Exception as _exc:
+    log.critical("Model initialization failed: %s", _exc, exc_info=True)
 
 # ── Emotion config ────────────────────────────────────────────────────────
 EMOTION_EMOJI = {
@@ -71,7 +81,6 @@ EMOTION_COLORS = {
     "sadness": "#3B82F6",
     "surprise": "#10B981",
 }
-
 
 
 @spaces.GPU
@@ -190,23 +199,44 @@ with gr.Blocks(
     gr.Markdown(
         "---\n"
         "**API Endpoints** also available: "
-        "`POST /predict` · `POST /predict/batch` · `GET /` (health check) · `GET /health/ready`  \n"
+        "`POST /predict` · `POST /predict/batch` · `GET /health/ready` · `GET /ui`  \n"
         "Built with ❤️ using FastAPI + Gradio"
     )
 
 
-os.environ["GRADIO_SSR_MODE"] = "False"
+# ── Attach REST API & Middleware directly to Gradio's underlying FastAPI app ──
+demo.app.add_middleware(
+    CORSMiddleware,
+    allow_origins=config.CORS_ORIGINS,
+    allow_credentials=config.CORS_ALLOW_CREDENTIALS,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+)
 
-# ── Enable Gradio queue for HF ZeroGPU / concurrent request support ───────
+demo.app.include_router(health_router)
+demo.app.include_router(predict_router)
+demo.app.include_router(analytics_router)
+
+# Mount frontend static UI at /ui
+frontend_dir = str(config.FRONTEND_DIR)
+if os.path.isdir(frontend_dir):
+    demo.app.mount(
+        "/ui",
+        StaticFiles(directory=frontend_dir, html=True),
+        name="frontend",
+    )
+    log.info("Serving frontend at /ui -> %s", frontend_dir)
+
+# Expose app for ASGI servers if needed
+app = demo.app
+
+# ── Enable Gradio Queue for ZeroGPU compatibility ─────────────────────────
 demo.queue()
 
-# ── Mount Gradio interface at /gradio so REST API remains on / ────────────
-app = gr.mount_gradio_app(fastapi_app, demo, path="/gradio", ssr_mode=False)
-demo.has_launched = True
-demo.is_running = True
-
 if __name__ == "__main__":
-    import uvicorn
-
     port = int(os.environ.get("PORT", 7860))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    demo.launch(
+        server_name="0.0.0.0",
+        server_port=port,
+        show_error=True,
+    )
