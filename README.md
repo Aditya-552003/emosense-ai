@@ -60,7 +60,7 @@ emotion_model/
 │   ├── index.html              # Interactive single & batch analyzer
 │   ├── evaluation.html         # Live empirical performance dashboard
 │   └── metrics.json            # Empirical model metrics
-├── tests/                      # Automated pytest suite (52 tests)
+├── tests/                      # Automated pytest suite (78 tests)
 │   ├── conftest.py             # Fixtures and mock components
 │   ├── test_validation.py      # Pydantic schema validation tests
 │   ├── test_preprocessing.py   # Preprocessing & NRC extraction unit tests
@@ -162,7 +162,7 @@ Full documentation: [docs/api_spec.md](docs/api_spec.md)
 
 ## 🧪 Automated Testing
 
-Run the full pytest suite (45 tests covering unit, API, security, and integration):
+Run the full pytest suite (78 tests covering unit, API, security, integration, and evaluation pipeline):
 
 ```bash
 # Run complete test suite
