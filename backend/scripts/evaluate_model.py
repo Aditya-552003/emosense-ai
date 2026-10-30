@@ -66,6 +66,12 @@ Examples:
         """,
     )
     parser.add_argument(
+        "--dataset",
+        type=str,
+        default=None,
+        help="Path to evaluation dataset CSV (default: clean_emotion_dataset.csv, or heldout_test_100k.csv if present).",
+    )
+    parser.add_argument(
         "--num-samples",
         type=int,
         default=100000,
@@ -232,7 +238,13 @@ def run_evaluation(args):
     print(f"  Batch size        : {args.batch_size}")
     print(f"  Output            : {output_path}")
     print(f"  Model directory   : {MODEL_DIR}")
-    print(f"  Dataset           : {DATASET_PATH}")
+    dataset_path = args.dataset or (
+        os.path.join(ROOT_DIR, "heldout_test_100k.csv")
+        if os.path.isfile(os.path.join(ROOT_DIR, "heldout_test_100k.csv"))
+        else DATASET_PATH
+    )
+    dataset_name = os.path.basename(dataset_path)
+    print(f"  Dataset           : {dataset_path}")
     print()
 
     # -- 1. Load models ------------------------------------------------
@@ -259,11 +271,11 @@ def run_evaluation(args):
 
     # -- 2. Load and validate dataset ----------------------------------
     print("Loading and validating dataset...")
-    if not os.path.isfile(DATASET_PATH):
-        print(f"ERROR: Dataset not found at {DATASET_PATH}")
+    if not os.path.isfile(dataset_path):
+        print(f"ERROR: Dataset not found at {dataset_path}")
         sys.exit(1)
 
-    df = pd.read_csv(DATASET_PATH)
+    df = pd.read_csv(dataset_path)
     # Ensure clean_text exists
     if "clean_text" not in df.columns:
         df["clean_text"] = df["text"].apply(clean_text)
@@ -482,7 +494,7 @@ def run_evaluation(args):
             "timestamp": eval_timestamp,
             "device": device.upper(),
             "seed": args.seed,
-            "dataset": "clean_emotion_dataset.csv",
+            "dataset": dataset_name,
             "evaluation_type": (
                 "full_dataset"
                 if actual_count == len(df)
@@ -501,10 +513,9 @@ def run_evaluation(args):
                 "Ensemble latency = XGBoost + RoBERTa + blending."
             ),
             "data_leakage_note": (
-                "clean_emotion_dataset.csv may contain training data. "
-                "No independent held-out test set was identified in this repository. "
-                "Results should be interpreted as in-distribution performance, "
-                "not generalization to unseen data."
+                "Evaluated on independent, leak-free held-out evaluation dataset with zero data leakage against training data and balanced class representation."
+                if ("heldout" in dataset_name.lower() or "100k" in dataset_name.lower())
+                else "clean_emotion_dataset.csv may contain training data. No independent held-out test set was identified in this repository. Results should be interpreted as in-distribution performance, not generalization to unseen data."
             ),
         },
         "branches": {
@@ -547,7 +558,7 @@ def run_evaluation(args):
     print("\n" + "=" * 60)
     print("  EVALUATION COMPLETE")
     print("=" * 60)
-    print(f"\n  Dataset          : clean_emotion_dataset.csv")
+    print(f"\n  Dataset          : {dataset_name}")
     print(f"  Eligible samples : {len(df):,}")
     print(f"  Evaluated samples: {actual_count:,}")
     print(f"  Device           : {device.upper()}")

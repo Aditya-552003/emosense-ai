@@ -39,7 +39,8 @@ emotion_model/
 │   │   │   ├── inference.py    # Vectorized batch & single inference, probability normalization
 │   │   │   └── model_loader.py # Thread-safe model lifecycle & artifact manager
 │   │   └── utils/              # Shared NLP utilities
-│   │       └── preprocessing.py# clean_text & NRC lexicon feature extractor
+│   │       ├── preprocessing.py# clean_text & NRC lexicon feature extractor
+│   │       └── training_balancer.py # Class weighting & rebalancing utilities
 │   ├── model/                  # Trained ML artifacts
 │   │   ├── xgb.pkl             # Trained XGBoost model
 │   │   ├── word_tfidf.pkl      # Word-level TF-IDF vectorizer
@@ -50,7 +51,8 @@ emotion_model/
 │   │   ├── nrc_lexicon.txt     # NRC Word-Level Emotion Lexicon
 │   │   └── roberta_best/       # Fine-tuned RoBERTa transformer weights
 │   ├── scripts/                # Evaluation & CLI test tools
-│   │   ├── evaluate_model.py   # Empirical evaluation generating frontend/metrics.json
+│   │   ├── evaluate_model.py   # Configurable evaluation pipeline generating metrics.json
+│   │   ├── build_100k_testset.py# Builds leak-free 100k held-out test dataset
 │   │   └── test_inference.py   # Smoke test script
 │   ├── requirements.txt        # Backend dependencies
 │   └── start_server.bat        # Windows server launcher
@@ -60,7 +62,7 @@ emotion_model/
 │   ├── index.html              # Interactive single & batch analyzer
 │   ├── evaluation.html         # Live empirical performance dashboard
 │   └── metrics.json            # Empirical model metrics
-├── tests/                      # Automated pytest suite (78 tests)
+├── tests/                      # Automated pytest suite (82 tests)
 │   ├── conftest.py             # Fixtures and mock components
 │   ├── test_validation.py      # Pydantic schema validation tests
 │   ├── test_preprocessing.py   # Preprocessing & NRC extraction unit tests
@@ -162,7 +164,7 @@ Full documentation: [docs/api_spec.md](docs/api_spec.md)
 
 ## 🧪 Automated Testing
 
-Run the full pytest suite (78 tests covering unit, API, security, integration, and evaluation pipeline):
+Run the full pytest suite (82 tests covering unit, API, security, integration, balancer, and evaluation pipeline):
 
 ```bash
 # Run complete test suite
