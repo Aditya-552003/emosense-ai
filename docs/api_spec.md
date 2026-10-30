@@ -98,7 +98,8 @@ Content-Type: application/json
 |---|---|---|---|---|---|
 | `text` | string | ✓ | — | 1 – 2000 chars | The text to classify. Non-empty, non-whitespace. |
 | `alpha` | float | Optional | `0.7` | `0.0` – `1.0` | Soft voting weight: $\alpha \cdot P_{\text{RoBERTa}} + (1 - \alpha) \cdot P_{\text{XGBoost}}$. |
-| `ensemble_method` | string | Optional | `"soft_voting"` | `"soft_voting"`, `"stacking"` | Ensemble strategy. |
+| `ensemble_method` | string | Optional | `"soft_voting"` | `"soft_voting"`, `"stacking"`, `"dynamic_blend"` | Ensemble strategy (`dynamic_blend` uses confidence-gating). |
+| `confidence_threshold` | float | Optional | `0.65` | `0.0` – `1.0` | Cutoff for `dynamic_blend` (trusts RoBERTa if $\ge$ threshold). |
 
 #### Response `200 OK`
 ```json
@@ -152,7 +153,7 @@ Content-Type: multipart/form-data
 |---|---|---|---|---|
 | `file` | file (`.csv`) | ✓ | — | CSV file with a column named `text` (case-insensitive). Max 5 MB. |
 | `alpha` | float | Optional | `0.7` | Blend weight between 0.0 and 1.0. |
-| `ensemble_method` | string | Optional | `"soft_voting"` | `"soft_voting"` or `"stacking"`. |
+| `ensemble_method` | string | Optional | `"soft_voting"` | `"soft_voting"`, `"stacking"`, or `"dynamic_blend"`. |
 
 #### Response `200 OK`
 ```json

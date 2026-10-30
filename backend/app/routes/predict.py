@@ -40,7 +40,8 @@ async def predict(payload: PredictRequest) -> PredictResponse:
 
     - **text**: The sentence or paragraph to analyze (1 to 2000 chars).
     - **alpha**: Blend weight between 0.0 (XGBoost) and 1.0 (RoBERTa).
-    - **ensemble_method**: 'soft_voting' (default) or 'stacking'.
+    - **ensemble_method**: 'dynamic_blend' (default), 'soft_voting', or 'stacking'.
+    - **confidence_threshold**: Confidence cutoff for dynamic_blend (default 0.65).
 
     Returns the predicted emotion label, confidence score, and per-class probabilities.
     """
@@ -57,6 +58,7 @@ async def predict(payload: PredictRequest) -> PredictResponse:
                 payload.text,
                 alpha=payload.alpha,
                 ensemble_method=payload.ensemble_method,
+                confidence_threshold=payload.confidence_threshold,
             )
         return PredictResponse(**result)
     except HTTPException:
@@ -86,7 +88,7 @@ async def predict_batch(
 
     - **file**: CSV file with a column named 'text' (case-insensitive).
     - **alpha**: Blend weight (0.0 = pure XGBoost, 1.0 = pure RoBERTa).
-    - **ensemble_method**: 'soft_voting' or 'stacking'.
+    - **ensemble_method**: 'dynamic_blend', 'soft_voting', or 'stacking'.
     """
     if not is_model_ready():
         raise HTTPException(
@@ -114,10 +116,10 @@ async def predict_batch(
         )
 
     # 3. Validate ensemble_method
-    if ensemble_method not in ("soft_voting", "stacking"):
+    if ensemble_method not in ("soft_voting", "stacking", "dynamic_blend"):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="ensemble_method must be either 'soft_voting' or 'stacking'.",
+            detail="ensemble_method must be 'dynamic_blend', 'soft_voting', or 'stacking'.",
         )
 
     # 4. Stream and bound upload size (prevent OOM / DoS)

@@ -68,3 +68,45 @@ def test_emotion_class_order(mock_models):
     res = run_inference("Test text")
     expected_classes = ["anger", "fear", "joy", "neutral", "sadness", "surprise"]
     assert list(res["probabilities"].keys()) == expected_classes
+
+
+def test_dynamic_blend_probabilities():
+    from app.services.inference import dynamic_blend_probabilities
+
+    # 3 samples:
+    # 1. RoBERTa is highly confident (0.90 joy) >= threshold 0.65 -> unchanged
+    # 2. RoBERTa is uncertain (0.45 anger, 0.40 fear) < threshold 0.65 -> blended
+    # 3. RoBERTa is moderately confident (0.70 sadness) >= 0.65 -> unchanged
+    roberta_p = np.array([
+        [0.02, 0.02, 0.90, 0.02, 0.02, 0.02],
+        [0.45, 0.40, 0.05, 0.05, 0.03, 0.02],
+        [0.05, 0.05, 0.10, 0.05, 0.70, 0.05],
+    ])
+    xgb_p = np.array([
+        [0.10, 0.10, 0.10, 0.60, 0.05, 0.05],
+        [0.10, 0.70, 0.10, 0.05, 0.03, 0.02],
+        [0.20, 0.20, 0.20, 0.20, 0.10, 0.10],
+    ])
+
+    blended = dynamic_blend_probabilities(roberta_p, xgb_p, threshold=0.65, alpha=0.85)
+    assert blended.shape == (3, 6)
+
+    # Sample 0 should be exactly roberta_p normalized
+    assert np.allclose(blended[0], roberta_p[0] / roberta_p[0].sum(), atol=1e-5)
+
+    # Sample 1 should be weighted blend
+    expected_1 = 0.85 * roberta_p[1] + 0.15 * xgb_p[1]
+    expected_1 = expected_1 / expected_1.sum()
+    assert np.allclose(blended[1], expected_1, atol=1e-5)
+
+    # Sample 2 should be exactly roberta_p normalized
+    assert np.allclose(blended[2], roberta_p[2] / roberta_p[2].sum(), atol=1e-5)
+
+
+def test_single_inference_dynamic_blend(mock_models):
+    res = run_inference("I am so delighted!", alpha=0.85, ensemble_method="dynamic_blend")
+
+    assert res["success"] is True
+    assert res["predicted_emotion"] in mock_models["label_encoder"].classes_
+    assert len(res["probabilities"]) == 6
+    assert np.isclose(sum(res["probabilities"].values()), 1.0, atol=1e-4)

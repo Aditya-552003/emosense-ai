@@ -105,6 +105,19 @@ Examples:
         choices=["cpu", "cuda"],
         help="Device for RoBERTa inference. Auto-detected if not specified.",
     )
+    parser.add_argument(
+        "--ensemble-method",
+        type=str,
+        default="dynamic_blend",
+        choices=["dynamic_blend", "soft_voting"],
+        help="Ensemble strategy: dynamic_blend (confidence-gated) or soft_voting (default: dynamic_blend).",
+    )
+    parser.add_argument(
+        "--confidence-threshold",
+        type=float,
+        default=0.65,
+        help="Confidence cutoff for dynamic_blend (default: 0.65).",
+    )
     return parser.parse_args()
 
 
@@ -371,10 +384,23 @@ def run_evaluation(args):
     pred_roberta = [classes[int(np.argmax(row))] for row in ctx_probs]
 
     # -- 7. Ensemble branch evaluation --------------------------------
-    print("Evaluating Hybrid Ensemble (alpha=0.7 soft voting)...")
-    alpha = 0.7
+    alpha = 0.85
     t0_ens = time.perf_counter()
-    final_probs = alpha * ctx_probs + (1.0 - alpha) * sem_probs
+    if getattr(args, "ensemble_method", "dynamic_blend") == "dynamic_blend":
+        thresh = getattr(args, "confidence_threshold", 0.65)
+        print(f"Evaluating Hybrid Ensemble (Confidence-Gated Dynamic Blend: thresh={thresh}, alpha={alpha})...")
+        final_probs = np.copy(ctx_probs)
+        max_roberta_prob = np.max(ctx_probs, axis=-1)
+        uncertain_mask = max_roberta_prob < thresh
+        if np.any(uncertain_mask):
+            final_probs[uncertain_mask] = (
+                alpha * ctx_probs[uncertain_mask] + (1.0 - alpha) * sem_probs[uncertain_mask]
+            )
+    else:
+        alpha = 0.7
+        print("Evaluating Hybrid Ensemble (alpha=0.7 soft voting)...")
+        final_probs = alpha * ctx_probs + (1.0 - alpha) * sem_probs
+
     # Normalize each row
     row_sums = final_probs.sum(axis=1, keepdims=True)
     row_sums = np.where(row_sums > 0, row_sums, 1.0)
