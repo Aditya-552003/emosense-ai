@@ -11,7 +11,10 @@ Implements the multi-branch emotion prediction architecture:
          P = meta_clf.predict_proba([P(RoBERTa), P(XGBoost)])
 """
 
+import logging
 import time
+
+log = logging.getLogger(__name__)
 from typing import Any, Dict, List, Optional
 
 import numpy as np
