@@ -207,32 +207,31 @@ with gr.Blocks(
 create_app = _backend_mod.create_app
 fastapi_app = create_app()
 
-# ── Attach REST API & Middleware directly to Gradio's underlying FastAPI app ──
-demo.app.add_middleware(
-    CORSMiddleware,
-    allow_origins=config.CORS_ORIGINS,
-    allow_credentials=config.CORS_ALLOW_CREDENTIALS,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
-)
-
-demo.app.include_router(health_router)
-demo.app.include_router(predict_router)
-demo.app.include_router(analytics_router)
-
-# Mount FastAPI app at /api and /gradio_api/api for dedicated REST routing
-demo.app.mount("/api", fastapi_app)
-demo.app.mount("/gradio_api/api", fastapi_app)
-
-# Mount frontend static UI at /ui
-frontend_dir = str(config.FRONTEND_DIR)
-if os.path.isdir(frontend_dir):
-    demo.app.mount(
-        "/ui",
-        StaticFiles(directory=frontend_dir, html=True),
-        name="frontend",
+def _configure_server_app(server_app):
+    """Attach CORS, REST routers, and static mounts to the active FastAPI app."""
+    server_app.add_middleware(
+        CORSMiddleware,
+        allow_origins=config.CORS_ORIGINS,
+        allow_credentials=config.CORS_ALLOW_CREDENTIALS,
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
     )
-    log.info("Serving frontend at /ui -> %s", frontend_dir)
+    server_app.include_router(health_router)
+    server_app.include_router(predict_router)
+    server_app.include_router(analytics_router)
+    server_app.mount("/api", fastapi_app)
+
+    frontend_dir = str(config.FRONTEND_DIR)
+    if os.path.isdir(frontend_dir):
+        server_app.mount(
+            "/ui",
+            StaticFiles(directory=frontend_dir, html=True),
+            name="frontend",
+        )
+        log.info("Serving frontend at /ui -> %s", frontend_dir)
+
+# Configure before launch (for ASGI import / demo.app)
+_configure_server_app(demo.app)
 
 # Expose app for ASGI servers if needed
 app = demo.app
@@ -246,4 +245,16 @@ if __name__ == "__main__":
         server_name="0.0.0.0",
         server_port=port,
         show_error=True,
+        prevent_thread_lock=True,
     )
+    # In Gradio 5, launch() re-creates self.server_app; re-attach routers to running instance
+    if hasattr(demo, "server_app") and demo.server_app is not None:
+        _configure_server_app(demo.server_app)
+    
+    # Block main thread to keep server alive
+    import time
+    try:
+        while True:
+            time.sleep(3600)
+    except (KeyboardInterrupt, SystemExit):
+        demo.close()
