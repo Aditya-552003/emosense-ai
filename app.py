@@ -207,15 +207,16 @@ with gr.Blocks(
 create_app = _backend_mod.create_app
 fastapi_app = create_app()
 
-def _configure_server_app(server_app):
+def _configure_server_app(server_app, is_post_launch: bool = False):
     """Attach CORS, REST routers, and static mounts to the active FastAPI app."""
-    server_app.add_middleware(
-        CORSMiddleware,
-        allow_origins=config.CORS_ORIGINS,
-        allow_credentials=config.CORS_ALLOW_CREDENTIALS,
-        allow_methods=["GET", "POST", "OPTIONS"],
-        allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
-    )
+    if not is_post_launch:
+        server_app.add_middleware(
+            CORSMiddleware,
+            allow_origins=config.CORS_ORIGINS,
+            allow_credentials=config.CORS_ALLOW_CREDENTIALS,
+            allow_methods=["GET", "POST", "OPTIONS"],
+            allow_headers=["Content-Type", "Authorization", "Accept", "X-Requested-With"],
+        )
     server_app.include_router(health_router)
     server_app.include_router(predict_router)
     server_app.include_router(analytics_router)
@@ -249,7 +250,7 @@ if __name__ == "__main__":
     )
     # In Gradio 5, launch() re-creates self.server_app; re-attach routers to running instance
     if hasattr(demo, "server_app") and demo.server_app is not None:
-        _configure_server_app(demo.server_app)
+        _configure_server_app(demo.server_app, is_post_launch=True)
     
     # Block main thread to keep server alive
     import time
