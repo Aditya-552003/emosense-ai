@@ -185,7 +185,7 @@ function renderBenchmarkDashboard(data) {
 
   // Banner
   if (benchmarkBannerText) {
-    const formattedCount = Number(summary.num_samples || 100000).toLocaleString();
+    const formattedCount = Number(summary.num_samples || 17484).toLocaleString();
     benchmarkBannerText.innerHTML = `
       <strong>Verified Empirical Benchmark:</strong> Evaluated on ${formattedCount} stratified test cases (${summary.device || 'CPU'} · ${summary.timestamp || 'Latest'}) from <code>clean_emotion_dataset.csv</code>.
     `;
@@ -194,7 +194,7 @@ function renderBenchmarkDashboard(data) {
   // KPIs
   if (kpiEnsAcc && branches.ensemble) kpiEnsAcc.textContent = `${branches.ensemble.accuracy}%`;
   if (kpiEnsF1 && branches.ensemble) kpiEnsF1.textContent = `${branches.ensemble.macro_f1}%`;
-  if (kpiSampleCount && summary) kpiSampleCount.textContent = Number(summary.num_samples || 100000).toLocaleString();
+  if (kpiSampleCount && summary) kpiSampleCount.textContent = Number(summary.num_samples || 17484).toLocaleString();
   if (kpiEnsLat && branches.ensemble) kpiEnsLat.textContent = `~${branches.ensemble.avg_latency_ms} ms`;
 
   // Branch Comparison Table

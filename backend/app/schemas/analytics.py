@@ -34,7 +34,7 @@ class DatasetSummary(BaseModel):
     device: str = Field(..., description="Hardware compute device (e.g. CPU, CUDA).")
     dataset_name: str = Field(default="clean_emotion_dataset.csv", description="Name of source dataset.")
     split_description: str = Field(
-        default="Stratified sampling (50 samples per class, seed=42) from held-out validation data.",
+        default="Empirical evaluation on eligible samples from clean_emotion_dataset.csv.",
         description="Dataset split and sampling methodology.",
     )
 

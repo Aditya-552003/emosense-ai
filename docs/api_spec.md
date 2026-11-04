@@ -98,7 +98,8 @@ Content-Type: application/json
 |---|---|---|---|---|---|
 | `text` | string | ✓ | — | 1 – 2000 chars | The text to classify. Non-empty, non-whitespace. |
 | `alpha` | float | Optional | `0.7` | `0.0` – `1.0` | Soft voting weight: $\alpha \cdot P_{\text{RoBERTa}} + (1 - \alpha) \cdot P_{\text{XGBoost}}$. |
-| `ensemble_method` | string | Optional | `"soft_voting"` | `"soft_voting"`, `"stacking"` | Ensemble strategy. |
+| `ensemble_method` | string | Optional | `"soft_voting"` | `"soft_voting"`, `"stacking"`, `"dynamic_blend"` | Ensemble strategy (`dynamic_blend` uses confidence-gating). |
+| `confidence_threshold` | float | Optional | `0.65` | `0.0` – `1.0` | Cutoff for `dynamic_blend` (trusts RoBERTa if $\ge$ threshold). |
 
 #### Response `200 OK`
 ```json
@@ -152,7 +153,7 @@ Content-Type: multipart/form-data
 |---|---|---|---|---|
 | `file` | file (`.csv`) | ✓ | — | CSV file with a column named `text` (case-insensitive). Max 5 MB. |
 | `alpha` | float | Optional | `0.7` | Blend weight between 0.0 and 1.0. |
-| `ensemble_method` | string | Optional | `"soft_voting"` | `"soft_voting"` or `"stacking"`. |
+| `ensemble_method` | string | Optional | `"soft_voting"` | `"soft_voting"`, `"stacking"`, or `"dynamic_blend"`. |
 
 #### Response `200 OK`
 ```json
@@ -194,41 +195,41 @@ Content-Type: multipart/form-data
 ## 5. Analytics & Insights
 
 ### `GET /analytics/evaluation`
-Retrieves empirical evaluation metrics calculated directly from the held-out validation dataset (300 stratified test cases from `clean_emotion_dataset.csv`).
+Retrieves empirical evaluation metrics calculated directly from the validation dataset (17,484 eligible test cases from `clean_emotion_dataset.csv`).
 
 #### Response `200 OK`
 ```json
 {
   "success": true,
   "summary": {
-    "num_samples": 300,
-    "timestamp": "2026-10-18 22:03:11",
+    "num_samples": 17484,
+    "timestamp": "2026-10-30 12:09:14",
     "device": "CPU",
     "dataset_name": "clean_emotion_dataset.csv",
-    "split_description": "Stratified held-out validation sample (50 per class, seed=42, 300 total samples)."
+    "split_description": "Empirical evaluation on 17,484 eligible samples across 6 emotion classes."
   },
   "branches": {
-    "xgb": { "accuracy": 91.3, "macro_f1": 91.5, "avg_latency_ms": 13.41 },
-    "roberta": { "accuracy": 98.0, "macro_f1": 98.0, "avg_latency_ms": 275.59 },
-    "ensemble": { "accuracy": 98.0, "macro_f1": 98.0, "avg_latency_ms": 275.72 }
+    "xgb": { "accuracy": 84.8, "macro_f1": 78.9, "avg_latency_ms": 0.25 },
+    "roberta": { "accuracy": 96.3, "macro_f1": 93.9, "avg_latency_ms": 41.37 },
+    "ensemble": { "accuracy": 95.5, "macro_f1": 92.6, "avg_latency_ms": 41.62 }
   },
   "class_metrics": {
-    "anger": { "precision": 100.0, "recall": 98.0, "f1": 99.0, "support": 50 },
-    "fear": { "precision": 98.0, "recall": 96.0, "f1": 97.0, "support": 50 },
-    "joy": { "precision": 98.0, "recall": 100.0, "f1": 99.0, "support": 50 },
-    "neutral": { "precision": 96.0, "recall": 96.0, "f1": 96.0, "support": 50 },
-    "sadness": { "precision": 96.2, "recall": 100.0, "f1": 98.0, "support": 50 },
-    "surprise": { "precision": 100.0, "recall": 98.0, "f1": 99.0, "support": 50 }
+    "anger": { "precision": 85.4, "recall": 97.9, "f1": 91.2, "support": 1544 },
+    "fear": { "precision": 79.8, "recall": 98.4, "f1": 88.1, "support": 510 },
+    "joy": { "precision": 89.6, "recall": 98.6, "f1": 93.9, "support": 1010 },
+    "neutral": { "precision": 99.6, "recall": 94.4, "f1": 96.9, "support": 12798 },
+    "sadness": { "precision": 89.2, "recall": 98.9, "f1": 93.8, "support": 873 },
+    "surprise": { "precision": 85.3, "recall": 99.7, "f1": 91.9, "support": 749 }
   },
   "confusion_matrix": {
     "labels": ["anger", "fear", "joy", "neutral", "sadness", "surprise"],
     "matrix": [
-      [98.0, 0.0, 0.0, 2.0, 0.0, 0.0],
-      [0.0, 96.0, 0.0, 2.0, 2.0, 0.0],
-      [0.0, 0.0, 100.0, 0.0, 0.0, 0.0],
-      [0.0, 2.0, 0.0, 96.0, 2.0, 0.0],
-      [0.0, 0.0, 0.0, 0.0, 100.0, 0.0],
-      [0.0, 0.0, 2.0, 0.0, 0.0, 98.0]
+      [97.9, 0.1, 0.1, 1.8, 0.1, 0.1],
+      [0.0, 98.4, 0.0, 1.0, 0.6, 0.0],
+      [0.2, 0.0, 98.6, 1.0, 0.0, 0.2],
+      [2.0, 1.0, 0.9, 94.4, 0.8, 1.0],
+      [0.2, 0.0, 0.0, 0.9, 98.9, 0.0],
+      [0.0, 0.0, 0.1, 0.1, 0.0, 99.7]
     ]
   }
 }

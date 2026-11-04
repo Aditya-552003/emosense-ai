@@ -33,11 +33,36 @@ def _normalize_probabilities(probs: np.ndarray) -> np.ndarray:
     uniform = np.full_like(probs, 1.0 / n_classes)
     return np.where(row_sums > 0, normalized, uniform)
 
+def dynamic_blend_probabilities(
+    roberta_probs: np.ndarray,
+    xgb_probs: np.ndarray,
+    threshold: float = 0.65,
+    alpha: float = 0.85,
+) -> np.ndarray:
+    """
+    Confidence-gated ensemble blending:
+    - If RoBERTa is confident (max probability >= threshold), trust RoBERTa completely.
+    - If RoBERTa is uncertain / ambiguous (< threshold), blend RoBERTa and XGBoost
+      using alpha-weighted soft voting so lexicon features act as an informative tiebreaker.
+    """
+    final_probs = np.copy(roberta_probs)
+    max_roberta_prob = np.max(roberta_probs, axis=-1)
+    uncertain_mask = max_roberta_prob < threshold
+
+    if np.any(uncertain_mask):
+        final_probs[uncertain_mask] = (
+            alpha * roberta_probs[uncertain_mask]
+            + (1.0 - alpha) * xgb_probs[uncertain_mask]
+        )
+
+    return _normalize_probabilities(final_probs)
+
 
 def run_inference(
     text: str,
     alpha: float = 0.7,
     ensemble_method: str = "soft_voting",
+    confidence_threshold: float = 0.65,
 ) -> Dict[str, Any]:
     """
     Run full multi-branch emotion prediction on a single text string.
@@ -50,7 +75,13 @@ def run_inference(
     Returns:
         Dict conforming to the PredictResponse schema.
     """
-    results = run_batch_inference([text], alpha=alpha, ensemble_method=ensemble_method, batch_size=1)
+    results = run_batch_inference(
+        [text],
+        alpha=alpha,
+        ensemble_method=ensemble_method,
+        confidence_threshold=confidence_threshold,
+        batch_size=1,
+    )
     return results[0]
 
 
@@ -58,6 +89,7 @@ def run_batch_inference(
     texts: List[str],
     alpha: float = 0.7,
     ensemble_method: str = "soft_voting",
+    confidence_threshold: float = 0.65,
     batch_size: int = 32,
 ) -> List[Dict[str, Any]]:
     """
@@ -135,11 +167,15 @@ def run_batch_inference(
     if ensemble_method == "stacking" and "meta_clf" in models:
         meta_X = np.hstack([ctx_probs, sem_probs])  # (n_samples, 12)
         raw_final = models["meta_clf"].predict_proba(meta_X)
+        final_probs = _normalize_probabilities(raw_final)
+    elif ensemble_method == "dynamic_blend":
+        final_probs = dynamic_blend_probabilities(
+            ctx_probs, sem_probs, threshold=confidence_threshold, alpha=alpha
+        )
     else:
         # Default: Alpha-weighted soft voting
         raw_final = alpha * ctx_probs + (1.0 - alpha) * sem_probs
-
-    final_probs = _normalize_probabilities(raw_final)
+        final_probs = _normalize_probabilities(raw_final)
 
     elapsed_ms = (time.perf_counter() - t0) * 1000
     per_item_ms = round(elapsed_ms / max(n_samples, 1), 2)

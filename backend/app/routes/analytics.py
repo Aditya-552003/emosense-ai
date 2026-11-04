@@ -41,11 +41,14 @@ def _load_evaluation_metrics() -> EvaluationMetricsResponse:
                 raw = json.load(f)
 
             summary = DatasetSummary(
-                num_samples=raw.get("summary", {}).get("num_samples", 100000),
+                num_samples=raw.get("summary", {}).get("num_samples", 17484),
                 timestamp=raw.get("summary", {}).get("timestamp", "Pre-evaluated"),
                 device=raw.get("summary", {}).get("device", "CPU"),
-                dataset_name="clean_emotion_dataset.csv",
-                split_description="Stratified held-out validation sample (100,000 total samples across 6 emotion classes).",
+                dataset_name=raw.get("summary", {}).get("dataset", "clean_emotion_dataset.csv"),
+                split_description=raw.get("summary", {}).get(
+                    "data_leakage_note",
+                    "Empirical evaluation on 17,484 eligible samples across 6 emotion classes.",
+                ),
             )
 
             branches = {
@@ -88,24 +91,35 @@ def _load_evaluation_metrics() -> EvaluationMetricsResponse:
     return EvaluationMetricsResponse(
         success=True,
         summary=DatasetSummary(
-            num_samples=100000,
+            num_samples=17484,
             timestamp="Empirical Benchmark",
             device="CPU",
             dataset_name="clean_emotion_dataset.csv",
-            split_description="Stratified held-out validation sample (100,000 total samples across 6 emotion classes).",
+            split_description="Empirical evaluation on 17,484 eligible samples across 6 emotion classes from clean_emotion_dataset.csv.",
         ),
         branches={
-            "xgb": BranchStats(accuracy=91.3, macro_f1=91.5, avg_latency_ms=13.41),
-            "roberta": BranchStats(accuracy=98.0, macro_f1=98.0, avg_latency_ms=275.59),
-            "ensemble": BranchStats(accuracy=98.0, macro_f1=98.0, avg_latency_ms=275.72),
+            "xgb": BranchStats(accuracy=84.8, macro_f1=78.9, avg_latency_ms=0.25),
+            "roberta": BranchStats(accuracy=96.3, macro_f1=93.9, avg_latency_ms=41.37),
+            "ensemble": BranchStats(accuracy=95.5, macro_f1=92.6, avg_latency_ms=41.62),
         },
         class_metrics={
-            cls: ClassMetric(precision=98.0, recall=98.0, f1=98.0, support=16667)
-            for cls in config.EMOTION_CLASSES
+            "anger": ClassMetric(precision=85.4, recall=97.9, f1=91.2, support=1544),
+            "fear": ClassMetric(precision=79.8, recall=98.4, f1=88.1, support=510),
+            "joy": ClassMetric(precision=89.6, recall=98.6, f1=93.9, support=1010),
+            "neutral": ClassMetric(precision=99.6, recall=94.4, f1=96.9, support=12798),
+            "sadness": ClassMetric(precision=89.2, recall=98.9, f1=93.8, support=873),
+            "surprise": ClassMetric(precision=85.3, recall=99.7, f1=91.9, support=749),
         },
         confusion_matrix=ConfusionMatrixData(
             labels=config.EMOTION_CLASSES,
-            matrix=[[100.0 if i == j else 0.0 for j in range(6)] for i in range(6)],
+            matrix=[
+                [97.9, 0.1, 0.1, 1.8, 0.1, 0.1],
+                [0.0, 98.4, 0.0, 1.0, 0.6, 0.0],
+                [0.2, 0.0, 98.6, 1.0, 0.0, 0.2],
+                [2.0, 1.0, 0.9, 94.4, 0.8, 1.0],
+                [0.2, 0.0, 0.0, 0.9, 98.9, 0.0],
+                [0.0, 0.0, 0.1, 0.1, 0.0, 99.7],
+            ],
         ),
     )
 

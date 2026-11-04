@@ -21,9 +21,14 @@ class PredictRequest(BaseModel):
         description="Blend weight between 0.0 (pure XGBoost) and 1.0 (pure RoBERTa).",
         examples=[0.7],
     )
-    ensemble_method: Literal["soft_voting", "stacking"] = Field(
+    ensemble_method: Literal["soft_voting", "stacking", "dynamic_blend"] = Field(
         default="soft_voting",
-        description="Ensemble strategy: 'soft_voting' (default) or 'stacking'.",
+        description="Ensemble strategy: 'dynamic_blend' (default), 'soft_voting', or 'stacking'.",
+    )
+    confidence_threshold: float = Field(
+        default=0.65,
+        description="Confidence threshold for dynamic_blend. If RoBERTa max prob >= threshold, RoBERTa is trusted alone.",
+        examples=[0.65],
     )
 
     @field_validator("text")
@@ -45,6 +50,15 @@ class PredictRequest(BaseModel):
             raise ValueError("Alpha must be a finite numeric value.")
         if v < 0.0 or v > 1.0:
             raise ValueError(f"Alpha must be between 0.0 and 1.0 (got {v}).")
+        return float(v)
+
+    @field_validator("confidence_threshold")
+    @classmethod
+    def validate_confidence_threshold(cls, v: float) -> float:
+        if not isinstance(v, (int, float)) or math.isnan(v) or math.isinf(v):
+            raise ValueError("Confidence threshold must be a finite numeric value.")
+        if v < 0.0 or v > 1.0:
+            raise ValueError(f"Confidence threshold must be between 0.0 and 1.0 (got {v}).")
         return float(v)
 
 

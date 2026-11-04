@@ -93,7 +93,7 @@
       <div class="source-banner" id="benchmarkBanner">
         <div class="status-pulse"></div>
         <span id="benchmarkBannerText">
-          <strong>Verified Empirical Benchmark:</strong> Evaluated on 100,000 stratified test cases across 6 emotion classes from <code>clean_emotion_dataset.csv</code>.
+          <strong>Verified Empirical Benchmark:</strong> Evaluated on 17,484 eligible test cases across 6 emotion classes from <code>clean_emotion_dataset.csv</code>.
         </span>
       </div>
 
@@ -104,7 +104,7 @@
             <span class="kpi-title">Ensemble Accuracy</span>
             <span class="kpi-icon">🎯</span>
           </div>
-          <div class="kpi-value" id="kpi-ens-acc">98.0%</div>
+          <div class="kpi-value" id="kpi-ens-acc">95.5%</div>
           <div class="kpi-sub">Held-out test set accuracy</div>
         </div>
 
@@ -113,7 +113,7 @@
             <span class="kpi-title">Macro F1-Score</span>
             <span class="kpi-icon">⚖️</span>
           </div>
-          <div class="kpi-value" id="kpi-ens-f1">98.0%</div>
+          <div class="kpi-value" id="kpi-ens-f1">92.6%</div>
           <div class="kpi-sub">Balanced across all 6 classes</div>
         </div>
 
@@ -122,8 +122,8 @@
             <span class="kpi-title">Test Sample Size</span>
             <span class="kpi-icon">📚</span>
           </div>
-          <div class="kpi-value" id="kpi-sample-count">100,000</div>
-          <div class="kpi-sub">Stratified (seed=42, ~16,667 / emotion)</div>
+          <div class="kpi-value" id="kpi-sample-count">17,484</div>
+          <div class="kpi-sub">Full eligible dataset (17,484 samples)</div>
         </div>
 
         <div class="kpi-card">
@@ -131,7 +131,7 @@
             <span class="kpi-title">Inference Latency</span>
             <span class="kpi-icon">⚡</span>
           </div>
-          <div class="kpi-value" id="kpi-ens-lat">~276 ms</div>
+          <div class="kpi-value" id="kpi-ens-lat">~41.6 ms</div>
           <div class="kpi-sub">End-to-end CPU soft voting</div>
         </div>
       </div>
@@ -178,7 +178,7 @@
               <div class="arch-tag-group">
                 <span class="arch-tag" style="color: #f59e0b;">TF-IDF N-grams</span>
                 <span class="arch-tag" style="color: #f59e0b;">NRC Lexicon</span>
-                <span class="arch-tag" style="color: #f59e0b;">~13.4 ms Latency</span>
+                <span class="arch-tag" style="color: #f59e0b;">~0.25 ms Latency</span>
               </div>
             </div>
 
@@ -190,7 +190,7 @@
               <div class="arch-tag-group">
                 <span class="arch-tag" style="color: #3b82f6;">Deep Context</span>
                 <span class="arch-tag" style="color: #3b82f6;">Attention Heads</span>
-                <span class="arch-tag" style="color: #3b82f6;">98.0% Accuracy</span>
+                <span class="arch-tag" style="color: #3b82f6;">96.3% Accuracy</span>
               </div>
             </div>
           </div>
@@ -238,21 +238,21 @@
               <tbody>
                 <tr>
                   <td>XGBoost (Semantic)</td>
-                  <td id="xgb-acc">91.3%</td>
-                  <td id="xgb-f1">91.5%</td>
-                  <td id="xgb-lat">~13.4 ms</td>
+                  <td id="xgb-acc">84.8%</td>
+                  <td id="xgb-f1">78.9%</td>
+                  <td id="xgb-lat">~0.25 ms</td>
                 </tr>
                 <tr>
                   <td>RoBERTa (Contextual)</td>
-                  <td id="rob-acc">98.0%</td>
-                  <td id="rob-f1">98.0%</td>
-                  <td id="rob-lat">~275.6 ms</td>
+                  <td id="rob-acc">96.3%</td>
+                  <td id="rob-f1">93.9%</td>
+                  <td id="rob-lat">~41.4 ms</td>
                 </tr>
                 <tr class="row-meta-stacked">
                   <td>Hybrid Ensemble (&alpha;=0.7)</td>
-                  <td id="ens-acc">98.0%</td>
-                  <td id="ens-f1">98.0%</td>
-                  <td id="ens-lat">~275.7 ms</td>
+                  <td id="ens-acc">95.5%</td>
+                  <td id="ens-f1">92.6%</td>
+                  <td id="ens-lat">~41.6 ms</td>
                 </tr>
               </tbody>
             </table>

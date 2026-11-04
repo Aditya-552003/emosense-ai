@@ -92,3 +92,9 @@ def test_predict_response_schema():
     assert resp.success is True
     assert resp.predicted_emotion == "joy"
     assert resp.confidence == 0.95
+
+
+def test_predict_request_dynamic_blend_method():
+    req = PredictRequest(text="Great news!", alpha=0.85, ensemble_method="dynamic_blend", confidence_threshold=0.65)
+    assert req.ensemble_method == "dynamic_blend"
+    assert req.confidence_threshold == 0.65
