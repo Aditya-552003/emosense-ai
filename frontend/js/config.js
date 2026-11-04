@@ -29,8 +29,8 @@ function resolveApiBase() {
     const isLocal = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost";
     const isHfSpace = window.location.hostname.endsWith("hf.space");
 
-    // If served directly by backend on HF Space or local uvicorn (port 8080 / 7860)
-    if (isHfSpace || window.location.port === "8080" || window.location.port === "7860") {
+    // If served directly by backend on HF Space or local uvicorn (any port e.g. 8000, 8080, 7860)
+    if (isHfSpace || (isLocal && window.location.port !== "5500" && window.location.port !== "3000" && window.location.port !== "5173")) {
       return customBase || window.location.origin;
     }
 
